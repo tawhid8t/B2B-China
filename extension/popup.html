@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BridgeCart Purchase Assistant</title>
+    <style>
+      body { width: 340px; margin: 0; font-family: Arial, sans-serif; color: #172026; background: #f7f4ef; }
+      main { padding: 16px; }
+      button { width: 100%; border: 0; border-radius: 6px; background: #187064; color: #fff; padding: 10px 12px; font-weight: 700; cursor: pointer; }
+      pre { white-space: pre-wrap; background: #fff; border: 1px solid #ded8cc; border-radius: 6px; padding: 10px; max-height: 220px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>BridgeCart</h1>
+      <p>Fetch approved purchase queue and assist admin cart entry.</p>
+      <button id="fetchQueue">Fetch queue</button>
+      <pre id="output">No queue loaded.</pre>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

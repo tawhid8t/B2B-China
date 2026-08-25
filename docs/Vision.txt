@@ -1,0 +1,68 @@
+The Business Today (How It Works Now)
+I currently run a cross-border sourcing and fulfillment business 100% manually. I live in China, where I am a student, and my clients — based in Bangladesh — use me as their buying agent for products on Taobao and 1688.com. Every step of the chain is done by hand: Source: uploaded vision document
+
+The current order cycle looks like this:
+
+Online meeting — The process starts with an online meeting between me and the client.
+Screen share & product selection — I share my laptop screen; the client browses products on 1688 from their phone, takes screenshots, and sends them to me in the meeting chat.
+Order confirmation — I download the images, open my app, show the full order (product, pieces, price), the client confirms, and we record the meeting as the order record (product list + price + quantity).
+Purchasing — After the meeting, I place the orders in my app. The sellers ship the goods to my Chinese university address.
+Receiving & verification — I receive the parcels one by one, bring them to my room, unpack, and verify every product's quantity and condition against the order.
+Repacking — Everything is checked, I repack all products into large boxes.
+Forwarding to Guangzhou — I send the boxes from my Chinese address to my shipping company in Guangzhou. The company confirms receipt and takes full responsibility — customs, taxes, and transport — until the goods arrive at their warehouse in Bangladesh.
+Client pickup — The client collects the goods at the Bangladesh warehouse and pays the shipping charges on the spot.
+The Cost of Manual Work
+The most painful part of the job is bookkeeping. For every single product I must build and maintain an Excel sheet that includes:
+
+The product image — because product names alone are not enough; each item must be visually identified
+The Chinese price
+The Bangladeshi (BDT) price, converted at the prevailing rate
+The shipping charges
+This sheet is then sent to the client. When a client has paid advance money, I also have to reconcile their account — how much is used, how much remains, how much they can still buy, and whether they have exceeded their balance. All of this is done by hand: downloading product images, pasting them into Excel, calculating rates. It is slow and expensive in time.
+
+The Future Vision
+I want to move this entire operation from manual to automated — so the client orders themselves, I oversee everything from an admin panel, and my own hands are no longer required anywhere in the middle of the chain.
+
+The core vision: a full-stack website where the client does the ordering, an admin panel where I manage and generate orders, a Chrome extension that automates purchasing on 1688, and two staff members in China who receive and repack goods before automatic delivery through my Guangzhou warehouse partner.
+
+1. Customer-Facing Platform (Frontend)
+Landing page — who we are, what we do, our services, product and shipping policies, and how shipping fees are calculated.
+Login / registration portal — clients create accounts and sign in.
+Link-based ordering — the client pastes a Taobao/1688 product link; the system's API fetches the product information and displays it as a pop-up. The client then selects size, color, and quantity, and instantly sees the total price, plus the seller-to-my-address delivery charge.
+Cost estimation — the client can confirm an order or request an estimate. The estimate flow automatically:
+Converts per-unit price from CNY to BDT
+Converts the seller-to-me delivery charge into BDT
+Calculates the product weight (per unit and for the total quantity)
+Identifies the product category and applies my pre-set per-category shipping rates to produce an estimated shipping rate
+Adds the per-kg delivery cost from my Chinese address to Guangzhou, converted to BDT
+Adds my profit per product (a fixed percentage or a fixed amount per product)
+Shows the total estimated cost per product and per order — after which the client confirms or refuses
+Live order status — for every confirmed order, the client sees the real status: pending, confirmed, or seller has shipped.
+2. Group Orders
+To keep orders manageable, the system automatically groups them: each group order holds up to 40 orders; when 40 are fulfilled, a new group is created. In the group view, the client sees everything neatly organized — product images, prices, estimated costs, current status, and group totals — and can click into any specific product for full details. When I convert estimates into real costs from the backend, the product and group information updates automatically. Clients can filter by month or day.
+
+3. Payment & Wallet System
+A default exchange rate is set in the system.
+When a client pays advance money, the amount is converted to RMB at the rate of that day and credited to their wallet.
+As they order and the wallet balance runs out, the system alerts them and falls back to the default exchange rate.
+Products ordered beyond the advance balance are charged at admin-adjusted rates (instead of the default rate), which the client can see on their page.
+The client can view their full payment history — how much was paid on which date, how much remains.
+If a client needs to place a repeated order — i.e., the same product needs to be ordered again — in that case, the client saves that product to favorites.
+Afterwards, from the favorites option, they will order that product again with no hassle; they only need to enter the quantity, size, and color.
+4. The Admin Chrome Extension
+To automate purchasing on 1688, a Chrome extension will add client orders directly into the admin's 1688 shopping cart — size, color, and quantity copied exactly. The admin does a cross-check and pays manually. After payment, the extension pulls the payment/order status from 1688 and fills in the admin dashboard: tracking number, order number, and amount paid.
+
+5. Admin Dashboard & Chinese Courier Integration
+The dashboard includes all standard business features, plus:
+
+Chinese courier API integration — live tracking numbers, which products have arrived and which are on the way.
+Barcode scanning system — when a sub-admin receives products, they scan the barcode with their phone; a pop-up shows the product's details with blank fields for the weight and the number of pieces in the package.
+After filling the data and doing a quality check, repacking begins: same-category products are packed into large cartons.
+Carton creation — the sub-admin creates the carton in the admin panel; the system auto-generates a carton name, then the sub-admin fills in net weight, gross weight, and product names.
+Shipping labels — the system generates a printable label for each carton carrying the super admin's shipping mark; the sub-admin prints and attaches it to every carton.
+The cartons are then shipped from the warehouse to Guangzhou via a domestic Chinese courier, which issues a tracking number per carton — the sub-admin either adds the numbers manually or uploads a photo and the system extracts the tracking numbers automatically.
+6. The Team in China
+When products arrive in China, my two staff members receive them, scan each parcel with their phone camera to see which customer it belongs to and where it must go, and then repack everything correctly. Each staff member gets a separate login ID and password inside the admin panel, showing only the information relevant to their job — so they can complete their work properly without touching anything else.
+
+7. The End State
+Zero-touch automation. Clients create their own orders; I manage and generate orders from my admin panel; my two staff handle receiving and repacking; delivery flows automatically to the Guangzhou warehouse and onward to Bangladesh. All data — the complete history of the business — lives inside the website, so there are no future problems, and every task can be handled both automatically and manually when needed.

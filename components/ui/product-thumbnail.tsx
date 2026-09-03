@@ -21,17 +21,18 @@ const sizeClasses = {
 
 export function ProductThumbnail({ src, alt, size = "md", className, imageClassName }: ProductThumbnailProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const canRender = Boolean(src && failedSrc !== src);
+  const imageSrc = proxiedImageSource(src);
+  const canRender = Boolean(imageSrc && failedSrc !== imageSrc);
 
   return (
     <span className={cn("grid shrink-0 place-items-center overflow-hidden rounded-card border border-border bg-surface-muted", sizeClasses[size], className)}>
       {canRender ? (
         <img
-          src={src ?? undefined}
+          src={imageSrc ?? undefined}
           alt={alt}
           loading="lazy"
           decoding="async"
-          onError={() => setFailedSrc(src ?? null)}
+          onError={() => setFailedSrc(imageSrc ?? null)}
           className={cn("h-full w-full object-contain p-1.5", imageClassName)}
         />
       ) : (
@@ -41,4 +42,14 @@ export function ProductThumbnail({ src, alt, size = "md", className, imageClassN
       )}
     </span>
   );
+}
+
+function proxiedImageSource(src: string | null | undefined) {
+  if (!src || src.startsWith("/") || src.startsWith("data:") || src.startsWith("/api/product-image")) return src;
+  try {
+    const source = new URL(src);
+    return source.protocol === "https:" ? `/api/product-image?src=${encodeURIComponent(source.toString())}` : src;
+  } catch {
+    return src;
+  }
 }

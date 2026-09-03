@@ -34,7 +34,7 @@ test("Subphase 7F uses the same statement presentation for complete mobile cards
   assert.match(statement, /function StatementCards/);
   assert.match(statement, /data-ui="product-statement-card"/);
   assert.match(statement, /Mixed progress across submissions/);
-  assert.match(statement, /Submission details will be available in the next Product Statement step/);
+  assert.match(statement, /\/client\/excel-details\/\$\{row\.product_link_id\}/);
   assert.match(statement, /hidden lg:block/);
   assert.match(statement, /data-ui="product-statement-table"/);
   assert.match(fixture, /<ClientProductStatement fixtureData=/);

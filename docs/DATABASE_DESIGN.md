@@ -264,9 +264,9 @@ Rules:
 
 ## 7. Order Tables
 
-## 7.1 `order_groups`
+## 7.1 `order_groups` (legacy)
 
-Groups client orders into batches of up to 40 fulfilled items.
+Stores historical order-group records created before the client product statement. The table and existing references remain for backward compatibility, reporting history, and auditability. New orders must not create or receive a group assignment.
 
 Important columns:
 
@@ -287,10 +287,25 @@ Indexes:
 
 Rules:
 
-- New confirmed orders join the active group.
-- Group closes when 40 fulfilled order items are reached.
+- Existing rows remain readable and must not be deleted by the group-retirement work.
+- The former active-group and 40-item closure behavior applies only to legacy records.
 
-## 7.2 `order_items`
+## 7.2 `product_orders`
+
+Stores one client submission for one product and groups its SKU-level order items without replacing their operational ownership.
+
+Important columns:
+
+- `id uuid primary key`
+- `order_number text unique`
+- `client_id uuid references clients(id)`
+- `product_link_id uuid references product_links(id)`
+- `submission_key text`
+- `created_at timestamptz`
+
+Each `order_items` record includes `product_order_id uuid references product_orders(id)`. Existing historical lines are backfilled into non-merging product orders.
+
+## 7.3 `order_items`
 
 Stores each ordered product/SKU/quantity.
 
@@ -298,7 +313,7 @@ Important columns:
 
 - `id uuid primary key`
 - `client_id uuid references clients(id)`
-- `group_id uuid references order_groups(id)`
+- `group_id uuid references order_groups(id)` (legacy nullable compatibility reference)
 - `estimate_id uuid references estimates(id)`
 - `product_link_id uuid references product_links(id)`
 - `product_sku_id uuid references product_skus(id)`
@@ -313,6 +328,14 @@ Important columns:
 - `status order_status not null default 'pending_admin_review'`
 - `admin_notes text`
 - `client_notes text`
+- `wallet_required_cny numeric(14,2)`
+- `wallet_reserved_cny numeric(14,2) not null default 0`
+- `wallet_uncovered_cny numeric(14,2) not null default 0`
+- `wallet_rate_cny_to_bdt numeric(10,4)`
+- `wallet_committed_cny numeric(14,2)`
+- `wallet_committed_at timestamptz`
+- `wallet_committed_by uuid references profiles(id)`
+- `wallet_rate_adjustment_reason text`
 - `created_at timestamptz`
 - `updated_at timestamptz`
 
@@ -322,6 +345,15 @@ Indexes:
 - Index on `group_id`
 - Index on `status`
 - Index on `created_at`
+- Partial index on `wallet_committed_by`
+
+Wallet coverage rules:
+
+- Confirmation reserves at most the available wallet balance and never creates a negative balance.
+- `wallet_uncovered_cny` preserves the amount still payable while the order continues.
+- Purchase commitment releases the reservation and debits only the covered amount.
+- The order/estimate snapshot rate is used unless an admin supplies an adjusted rate with a persisted reason.
+- Commitment retries must match the already settled paid amount and applied rate.
 
 ## 7.3 `order_status_events`
 
@@ -353,18 +385,31 @@ Important columns:
 - `id uuid primary key`
 - `client_id uuid references clients(id)`
 - `amount_bdt numeric(14,2) not null`
+- `approved_amount_bdt numeric(14,2)`
 - `paid_at date not null`
 - `proof_file_path text`
 - `status payment_status not null default 'pending'`
 - `reviewed_by uuid references profiles(id)`
 - `reviewed_at timestamptz`
 - `rejection_reason text`
+- `review_reason text`
 - `created_at timestamptz`
 
 Indexes:
 
 - Index on `client_id`
 - Index on `status`
+- Partial review-queue index on `status, created_at` for `pending` and `needs_review`
+
+Rules:
+
+- Every new proof requires a private Storage object path; legacy rows without a file remain readable.
+- Accepted files are JPG, PNG, WebP, or PDF up to 10 MB.
+- Client submission creates a pending proof and an admin notification but never wallet credit.
+- Review commands derive the reviewer from `auth.uid()`; callers cannot provide a reviewer ID.
+- Approval preserves the claim, stores the verified amount separately, snapshots the applied rate in one wallet credit, and is idempotent under retry.
+- Rejection, needs-review, and admin cancellation require audited reasons and notify the client.
+- Approved, rejected, and cancelled proof decisions are immutable through normal application flows.
 
 ## 8.2 `wallet_transactions`
 
@@ -384,6 +429,7 @@ Important columns:
 - `status text not null default 'posted'`
 - `notes text`
 - `created_by uuid references profiles(id)`
+- `corrects_transaction_id uuid references wallet_transactions(id)`
 - `created_at timestamptz`
 
 Indexes:
@@ -396,6 +442,45 @@ Rules:
 
 - Approved wallet transactions must not be updated or deleted from normal app flows.
 - Corrections must use adjustment transactions.
+- Full or partial corrections must link to the original transaction, have the opposite financial effect, and include a reason.
+- Cumulative linked corrections must not exceed the original transaction.
+- A correction preserves the original client and exchange rate, uses the opposite financial sign, and derives a proportional BDT amount.
+- Manual deductions and corrections of positive entries are rejected if they would make available balance negative.
+- `get_wallet_statement(...)` is the canonical role-scoped, filtered, paginated ledger read model and includes proof/order/product links, correction totals, actor, reason, and running available balance.
+- Legacy `needs_review` proofs without a reason remain readable; every new or changed `needs_review` proof must include one.
+
+## 8.3 `payment_instructions`
+
+Stores super-admin managed bank and mobile-wallet destinations displayed to clients.
+
+Important columns:
+
+- `id uuid primary key`
+- `method text not null`
+- `label text not null`
+- `account_name text`
+- `account_identifier text`
+- `instructions text`
+- `active boolean not null default true`
+- `sort_order integer not null default 0`
+- `created_by uuid references profiles(id)`
+- `updated_by uuid references profiles(id)`
+- `created_at timestamptz`
+- `updated_at timestamptz`
+
+Rules:
+
+- Clients can read active instructions only.
+- Admin and super admin can read all instructions; only super admin can create or update them.
+- Instructions are deactivated instead of deleted through normal application flows.
+
+## 8.4 `exchange_rates`
+
+Default CNY/BDT rates form an append-only effective-date history. Super admins
+may append a current or future row, including a newer same-day row. The current
+rate is the most recently created row for the latest effective date not later
+than today. Historical estimates, approvals, and wallet entries retain their
+own rate snapshots.
 
 ## 9. Purchasing Tables
 
@@ -423,6 +508,24 @@ Important columns:
 - `order_item_id uuid references order_items(id)`
 - `status text not null default 'queued'`
 - `created_at timestamptz`
+
+## 9.3 `purchase_tasks`
+
+One persisted, admin-only coordination record for each product order and purchase batch. It stores the product-wide extension state, cart-add actor/time, and safe manual-review message; SKU-level operational data remains in `order_items` and `purchase_batch_items`.
+
+Extension queue functions expose a task only when all SKU lines in its product
+order remain `queued_for_purchase`; a mixed product order is never exposed for
+a partial cart action.
+
+Important columns:
+
+- `id uuid primary key`
+- `product_order_id uuid unique references product_orders(id)`
+- `purchase_batch_id uuid unique references purchase_batches(id)`
+- `state text`
+- `cart_added_at timestamptz`
+- `cart_added_by uuid references profiles(id)`
+- `last_error text`
 
 Indexes:
 
@@ -794,10 +897,15 @@ Recommended database functions:
 
 - `current_user_role()`
 - `get_client_wallet_balance(client_id)`
+- `get_client_wallet_totals(client_id)`
 - `create_or_get_active_order_group(client_id)`
 - `close_group_if_fulfilled_limit_reached(group_id)`
 - `post_wallet_transaction(...)`
-- `approve_payment_proof(...)`
+- `review_payment_proof(...)`
+- `create_exchange_rate(...)`
+- `get_wallet_statement(...)`
+- `create_wallet_adjustment(...)`
+- `correct_wallet_transaction(...)`
 - `change_order_status(...)`
 - `write_audit_log(...)`
 
@@ -810,8 +918,7 @@ Recommended triggers:
 - Insert `order_status_events` when order status changes.
 - Insert audit log for wallet transactions.
 - Insert audit log for rate/profit/shipping setting changes.
-- Recalculate order group totals when order item actual cost changes.
-- Close order group when fulfilled item count reaches 40.
+- Maintain legacy group totals only for historical group records; do not create or assign groups for new orders.
 
 ## 19. Reporting Views
 
@@ -825,6 +932,7 @@ Recommended views:
 - `packing_queue_view`
 - `carton_shipping_report_view`
 - `monthly_client_summary_view`
+- `client_product_statement_view` (or an equivalently protected query) for the client-facing product-link rollup
 
 Views should avoid exposing internal-only fields to clients.
 

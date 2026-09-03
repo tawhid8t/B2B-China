@@ -1,6 +1,6 @@
 import { EstimateBreakdown, EstimateInput } from "@/lib/types";
 
-const DEFAULT_EXCHANGE_RATE_CNY_TO_BDT = 16.2;
+const DEFAULT_EXCHANGE_RATE_CNY_TO_BDT = 19.2;
 const DEFAULT_CHINA_TO_GUANGZHOU_PER_KG_BDT = 35;
 const DEFAULT_PROFIT_PERCENTAGE = 0.08;
 const DEFAULT_CATEGORY_WEIGHT_KG: Record<string, number> = {

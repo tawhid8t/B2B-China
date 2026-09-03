@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { authorizeApiRequest } from "@/lib/auth/api";
+import { PACKING_ROLES } from "@/lib/auth/roles";
 import { z } from "zod";
 
 const cartonSchema = z.object({
@@ -11,6 +13,9 @@ const cartonSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const authorization = await authorizeApiRequest(request, PACKING_ROLES);
+  if (!authorization.authorized) return authorization.response;
+
   const body = cartonSchema.safeParse(await request.json());
   if (!body.success) return NextResponse.json({ error: "Invalid carton payload." }, { status: 400 });
 

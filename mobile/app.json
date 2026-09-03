@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "BridgeCart",
+    "slug": "bridgecart-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "bridgecart",
+    "userInterfaceStyle": "light",
+    "ios": {},
+    "android": {
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#EEF3F3"
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { authorizeApiRequest } from "@/lib/auth/api";
+import { WAREHOUSE_ROLES } from "@/lib/auth/roles";
 import { z } from "zod";
 
 const trackSchema = z.object({
@@ -9,6 +11,9 @@ const trackSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const authorization = await authorizeApiRequest(request, WAREHOUSE_ROLES);
+  if (!authorization.authorized) return authorization.response;
+
   const body = trackSchema.safeParse(await request.json());
   if (!body.success) return NextResponse.json({ error: "Invalid tracking sync payload." }, { status: 400 });
 

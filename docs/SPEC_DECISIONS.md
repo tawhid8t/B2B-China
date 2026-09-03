@@ -152,14 +152,14 @@ Scope: `BUSINESS_RULES.md`, `STATUS_MACHINE.md`, `DATABASE_DESIGN.md`, `API_CONT
 - **Why:** This avoids debiting before admin approval and preserves the explicitly required partial-balance flow, but the financial commitment point is a business decision.
 - **Developer approval required:** No. The owner confirmed this behavior for implementation; no automatic reservation-expiry rule was requested.
 
-### OC-002 — Reversing posted wallet transactions
+### OC-002 — Reversing posted wallet transactions (owner confirmed)
 
 - **Topic:** Append-only accounting and wallet transaction states
 - **Documents involved:** `BUSINESS_RULES.md`, `STATUS_MACHINE.md`, `DATABASE_DESIGN.md`
 - **Difference:** Business/database rules require immutable posted transactions and correction by adjustment. The status machine defines `posted -> reversed` and allows either a new transaction or marking the original reversed. The schema has no reversal link.
 - **Recommended canonical behavior:** Never mutate a posted transaction. Create a new posted adjustment/refund that links to the original transaction; keep the original `posted`. Add an explicit reversal link such as `reverses_transaction_id` and derive the net balance from both rows.
 - **Why:** Marking the original row `reversed` conflicts with append-only financial history and can change historical balances silently.
-- **Developer approval required:** Yes. Confirm the accounting representation and linked-reversal schema before wallet implementation.
+- **Developer approval required:** No. The owner confirmed linked full/partial refund or adjustment entries; the posted original remains immutable.
 
 ### OC-003 — Carton lifecycle and label-print transition
 
@@ -170,14 +170,14 @@ Scope: `BUSINESS_RULES.md`, `STATUS_MACHINE.md`, `DATABASE_DESIGN.md`, `API_CONT
 - **Why:** The current contract forces an invalid `packed -> sent_guangzhou` jump or silently treats generation as physical printing.
 - **Developer approval required:** Yes. Confirm whether physical print/attachment must be a persisted action and approve the endpoint/action shape used to record it.
 
-### OC-004 — Missing payment-proof transition APIs
+### OC-004 — Missing payment-proof transition APIs (owner confirmed)
 
 - **Topic:** Payment states and API endpoint names
 - **Documents involved:** `STATUS_MACHINE.md`, `API_CONTRACT.md`, `DEVELOPMENT_ROADMAP.md`
 - **Difference:** `needs_review` and `cancelled` are valid payment-proof states with defined transitions, but the API exposes only upload, approve, and reject actions.
 - **Recommended canonical behavior:** Expose authenticated actions for marking `needs_review` and cancelling an eligible pending proof; continue to enforce the exact status-machine transitions and require reasons where applicable.
 - **Why:** Without a contract, these documented states can be reached only by direct database edits or an undocumented generic update.
-- **Developer approval required:** Yes. Approve explicit endpoint names versus a generic payment-proof transition endpoint.
+- **Developer approval required:** No. The owner confirmed explicit approve, reject, needs-review, and cancellation actions.
 
 ### OC-005 — Immutable product snapshots versus provider uniqueness
 

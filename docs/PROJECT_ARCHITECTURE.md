@@ -91,7 +91,7 @@ Core features:
 - Product popup with image, title, variants, quantity, price, and domestic China delivery fee
 - Estimate request
 - Order confirmation
-- Grouped order view
+- Product statement with product-link rollups, filters, pagination, and business metrics
 - Day/month filtering
 - Wallet balance
 - Payment proof upload
@@ -110,7 +110,7 @@ Core features:
 - Staff management
 - Product estimate review
 - Order approval
-- Order group management
+- Legacy order-group history access only
 - Exchange rate management
 - Category shipping rate management
 - Profit rule management
@@ -208,18 +208,11 @@ The estimate should clearly show that final cost may change after actual weight,
 
 Wallet transactions must be append-only. Existing wallet rows should not be edited after approval.
 
-## 5.4 Order Grouping Flow
+## 5.4 Client Product Statement Flow
 
-Each client has active order groups.
+The client product statement replaces active order grouping. It rolls SKU-level orders up by product link for client display, while purchasing, wallet, and warehouse operations continue to use individual SKU-level order items.
 
-Rules:
-
-- One group can hold up to 40 fulfilled order items.
-- When a group reaches 40 fulfilled items, it closes.
-- A new group is created automatically.
-- Client can filter groups by day or month.
-- Client can open any product inside a group for full details.
-- Group totals update when admin enters real cost.
+The statement supports date, month, category, and status filters; returns 30 product rows per page; and displays overall and category-wise ordered-product, quantity, and weight metrics. Legacy groups remain available only to preserve historical records.
 
 ## 5.5 Purchasing Flow
 

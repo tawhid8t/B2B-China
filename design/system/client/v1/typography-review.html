@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BridgeCart typography candidate review</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;family=Open+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: light;
+        --canvas: #f8fafa;
+        --surface: #fff;
+        --foreground: #09262b;
+        --muted: #5f6d73;
+        --border: #dfe5e6;
+        --primary: #002a31;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--canvas); color: var(--foreground); font-family: system-ui, sans-serif; }
+      main { max-width: 1440px; margin: 0 auto; padding: 32px; }
+      header { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+      h1 { margin: 0; font-size: 28px; line-height: 36px; }
+      .intro { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+      #font-status { color: var(--muted); font-size: 12px; text-align: right; }
+      .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+      .sample { min-width: 0; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); padding: 20px; box-shadow: 0 1px 2px rgba(0,42,49,.04), 0 8px 24px rgba(0,42,49,.06); }
+      .sample h2 { margin: 0 0 4px; font-size: 14px; line-height: 20px; }
+      .family { margin: 0 0 24px; color: var(--muted); font-size: 12px; }
+      .brand { margin: 0 0 24px; font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -.015em; }
+      .greeting { margin: 0; font-size: 24px; line-height: 32px; font-weight: 700; letter-spacing: -.015em; }
+      .body { margin: 4px 0 20px; color: var(--muted); font-size: 16px; line-height: 24px; }
+      .balance { border-radius: 20px; background: var(--primary); color: #fff; padding: 20px; }
+      .balance-label { margin: 0; font-size: 14px; line-height: 20px; font-weight: 500; opacity: .82; }
+      .amount { margin: 6px 0 18px; font-size: 36px; line-height: 44px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid rgba(255,255,255,.2); padding-top: 14px; }
+      .metric-label { margin: 0; font-size: 12px; line-height: 16px; opacity: .72; }
+      .metric-value { margin: 3px 0 0; font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+      .row-title { margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; }
+      .row-meta { margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 16px; }
+      .status { flex: none; border-radius: 999px; background: #e6f7f3; color: #0c7965; padding: 5px 8px; font-size: 12px; line-height: 16px; font-weight: 600; }
+      .open-sans { font-family: "Open Sans", sans-serif; }
+      .inter { font-family: "Inter", sans-serif; }
+      .geist { font-family: "Geist", sans-serif; }
+      .system { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", sans-serif; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Typography candidate review</h1>
+          <p class="intro">Identical tokens and content; only the primary family changes.</p>
+        </div>
+        <div id="font-status">Checking web fonts…</div>
+      </header>
+      <section class="grid" aria-label="Typography comparisons">
+        <article class="sample open-sans">
+          <h2>Current web</h2><p class="family">Open Sans</p>
+          <p class="brand">BridgeCart</p><p class="greeting">Good morning, Amina</p><p class="body">Here’s your business overview</p>
+          <div class="balance"><p class="balance-label">Available balance</p><p class="amount">CNY 8,420.00</p><div class="metrics"><div><p class="metric-label">Active reservations</p><p class="metric-value">1,280 CNY</p></div><div><p class="metric-label">Current rate</p><p class="metric-value">1 CNY = 16.45 BDT</p></div></div></div>
+          <div class="row"><div><p class="row-title">Payment proof under review</p><p class="row-meta">Submitted today</p></div><span class="status">Current</span></div>
+        </article>
+        <article class="sample inter">
+          <h2>Recommended</h2><p class="family">Inter</p>
+          <p class="brand">BridgeCart</p><p class="greeting">Good morning, Amina</p><p class="body">Here’s your business overview</p>
+          <div class="balance"><p class="balance-label">Available balance</p><p class="amount">CNY 8,420.00</p><div class="metrics"><div><p class="metric-label">Active reservations</p><p class="metric-value">1,280 CNY</p></div><div><p class="metric-label">Current rate</p><p class="metric-value">1 CNY = 16.45 BDT</p></div></div></div>
+          <div class="row"><div><p class="row-title">Payment proof under review</p><p class="row-meta">Submitted today</p></div><span class="status">Current</span></div>
+        </article>
+        <article class="sample geist">
+          <h2>Alternative</h2><p class="family">Geist</p>
+          <p class="brand">BridgeCart</p><p class="greeting">Good morning, Amina</p><p class="body">Here’s your business overview</p>
+          <div class="balance"><p class="balance-label">Available balance</p><p class="amount">CNY 8,420.00</p><div class="metrics"><div><p class="metric-label">Active reservations</p><p class="metric-value">1,280 CNY</p></div><div><p class="metric-label">Current rate</p><p class="metric-value">1 CNY = 16.45 BDT</p></div></div></div>
+          <div class="row"><div><p class="row-title">Payment proof under review</p><p class="row-meta">Submitted today</p></div><span class="status">Current</span></div>
+        </article>
+        <article class="sample system">
+          <h2>Alternative</h2><p class="family">Platform system / Segoe UI</p>
+          <p class="brand">BridgeCart</p><p class="greeting">Good morning, Amina</p><p class="body">Here’s your business overview</p>
+          <div class="balance"><p class="balance-label">Available balance</p><p class="amount">CNY 8,420.00</p><div class="metrics"><div><p class="metric-label">Active reservations</p><p class="metric-value">1,280 CNY</p></div><div><p class="metric-label">Current rate</p><p class="metric-value">1 CNY = 16.45 BDT</p></div></div></div>
+          <div class="row"><div><p class="row-title">Payment proof under review</p><p class="row-meta">Submitted today</p></div><span class="status">Current</span></div>
+        </article>
+      </section>
+    </main>
+    <script>
+      document.fonts.ready.then(() => {
+        const results = ["Open Sans", "Inter", "Geist"].map((name) => `${name}: ${document.fonts.check(`16px "${name}"`) ? "loaded" : "fallback"}`);
+        document.getElementById("font-status").textContent = results.join(" · ");
+      });
+    </script>
+  </body>
+</html>
+

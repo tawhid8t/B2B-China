@@ -2,40 +2,384 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
-  --background: #f7f4ef;
-  --foreground: #172026;
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-canvas: 247 248 245;
+    --color-surface: 255 255 255;
+    --color-surface-muted: 240 244 241;
+    --color-foreground: 25 35 32;
+    --color-muted: 83 101 94;
+    --color-border: 207 218 212;
+    --color-focus: 23 119 78;
+    --color-action-primary: 10 79 51;
+    --color-action-hover: 11 64 44;
+    --color-action-active: 9 52 37;
+    --color-action-soft: 220 239 229;
+    --color-on-action: 255 255 255;
+    --color-success: 23 119 78;
+    --color-warning: 148 96 35;
+    --color-danger: 169 54 54;
+    --color-danger-action: 169 54 54;
+    --color-info: 45 99 152;
+    --color-accent-mint: 74 154 111;
+    --color-accent-aqua: 45 99 152;
+    --color-accent-violet: 124 108 255;
+    --color-accent-coral: 181 63 41;
+    --radius-control: 0.625rem;
+    --radius-card: 0.875rem;
+    --radius-panel: 1.125rem;
+    --radius-sheet: 1.5rem;
+    --shadow-soft: 0 1px 2px rgba(9, 52, 37, 0.05), 0 8px 24px rgba(9, 52, 37, 0.06);
+    --shadow-panel: 0 12px 36px rgba(9, 52, 37, 0.09);
+    --shadow-overlay: 0 24px 70px rgba(15, 23, 20, 0.22);
+    --page-gutter: 1rem;
+    --section-space: 3.5rem;
+  }
+
+  .client-theme,
+  .auth-theme {
+    --color-canvas: 238 243 243;
+    --color-surface: 255 255 255;
+    --color-surface-muted: 247 250 250;
+    --color-foreground: 7 23 27;
+    --color-muted: 82 99 106;
+    --color-border: 217 225 226;
+    --color-focus: 22 143 115;
+    --color-action-primary: 11 36 41;
+    --color-action-hover: 16 51 58;
+    --color-action-active: 7 23 27;
+    --color-action-soft: 228 240 238;
+    --color-on-action: 255 255 255;
+    --color-success: 22 143 115;
+    --color-warning: 233 162 59;
+    --color-danger: 200 77 86;
+    --color-danger-action: 154 48 59;
+    --color-info: 69 196 221;
+    --color-accent-mint: 85 214 190;
+    --color-accent-aqua: 69 196 221;
+    --color-accent-violet: 124 108 255;
+    --color-accent-coral: 242 120 104;
+    --radius-control: 0.75rem;
+    --radius-card: 1.25rem;
+    --radius-panel: 1.5rem;
+    --radius-sheet: 1.75rem;
+    --shadow-soft: 0 1px 2px rgba(7, 23, 27, 0.04), 0 6px 16px rgba(7, 23, 27, 0.05);
+    --shadow-panel: 0 12px 32px rgba(7, 23, 27, 0.08);
+    --shadow-overlay: 0 24px 70px rgba(7, 23, 27, 0.22);
+  }
+
+  /* Preview-only application of the approved v1 candidate tokens. */
+  .client-theme.design-system-preview {
+    --color-canvas: 248 250 250;
+    --color-surface: 255 255 255;
+    --color-surface-muted: 245 248 248;
+    --color-foreground: 9 38 43;
+    --color-muted: 95 109 115;
+    --color-border: 223 229 230;
+    --color-focus: 8 122 107;
+    --color-action-primary: 0 42 49;
+    --color-action-hover: 0 57 66;
+    --color-action-active: 0 29 34;
+    --color-action-soft: 231 244 242;
+    --color-on-action: 255 255 255;
+    --color-success: 12 121 101;
+    --color-warning: 138 90 8;
+    --color-danger: 169 61 71;
+    --color-danger-action: 169 61 71;
+    --color-info: 37 111 130;
+    --color-accent-mint: 85 214 190;
+    --color-accent-aqua: 69 196 221;
+    --color-accent-violet: 124 108 255;
+    --color-accent-coral: 242 120 104;
+    --radius-control: 0.75rem;
+    --radius-card: 1.25rem;
+    --radius-panel: 1.5rem;
+    --radius-sheet: 1.75rem;
+    --shadow-soft: 0 1px 2px rgba(0, 42, 49, 0.04), 0 8px 24px rgba(0, 42, 49, 0.06);
+    --shadow-panel: 0 12px 32px rgba(0, 42, 49, 0.1);
+    --shadow-overlay: 0 24px 64px rgba(0, 31, 37, 0.22);
+    --page-gutter: clamp(1rem, 4.65vw, 1.25rem);
+    --section-space: 2rem;
+    font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Bengali", "Noto Sans SC", "Noto Sans", sans-serif;
+  }
+
+  /* Approved v1 client presentation. Public, staff, admin, and auth stay isolated. */
+  .client-theme:not(.design-system-preview) {
+    --color-canvas: 248 250 250;
+    --color-surface: 255 255 255;
+    --color-surface-muted: 245 248 248;
+    --color-foreground: 9 38 43;
+    --color-muted: 95 109 115;
+    --color-border: 223 229 230;
+    --color-focus: 8 122 107;
+    --color-action-primary: 0 42 49;
+    --color-action-hover: 0 57 66;
+    --color-action-active: 0 29 34;
+    --color-action-soft: 231 244 242;
+    --color-on-action: 255 255 255;
+    --color-success: 12 121 101;
+    --color-warning: 138 90 8;
+    --color-danger: 169 61 71;
+    --color-danger-action: 169 61 71;
+    --color-info: 37 111 130;
+    --color-accent-mint: 85 214 190;
+    --color-accent-aqua: 69 196 221;
+    --color-accent-violet: 124 108 255;
+    --color-accent-coral: 242 120 104;
+    --radius-control: 0.75rem;
+    --radius-card: 1.25rem;
+    --radius-panel: 1.5rem;
+    --radius-sheet: 1.75rem;
+    --shadow-soft: 0 1px 2px rgba(0, 42, 49, 0.04), 0 8px 24px rgba(0, 42, 49, 0.06);
+    --shadow-panel: 0 12px 32px rgba(0, 42, 49, 0.1);
+    --shadow-overlay: 0 24px 64px rgba(0, 31, 37, 0.22);
+    --page-gutter: clamp(1rem, 4.65vw, 1.25rem);
+    --section-space: 2rem;
+    font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Bengali", "Noto Sans SC", "Noto Sans", sans-serif;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 20rem;
+    scroll-behavior: smooth;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: clip;
+    background: rgb(var(--color-canvas));
+    color: rgb(var(--color-foreground));
+    font-family: var(--font-open-sans), "Open Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Bengali", "Noto Sans SC", "Noto Sans", sans-serif;
+    line-height: 1.5;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: rgb(var(--color-muted) / 0.78);
+  }
+
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid rgb(var(--color-focus));
+    outline-offset: 3px;
+  }
+
+  :where(button, input, select, textarea):disabled {
+    cursor: not-allowed;
+  }
+
+  ::selection {
+    background: #b6dac5;
+    color: #093425;
+  }
+
+  dialog::backdrop {
+    background: rgb(15 23 20 / 0.58);
+    backdrop-filter: blur(2px);
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --page-gutter: 1.5rem;
+      --section-space: 4.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --page-gutter: 2rem;
+      --section-space: 6rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
 }
 
-* {
-  box-sizing: border-box;
+@layer utilities {
+  .focus-ring {
+    outline: 2px solid transparent;
+    outline-offset: 3px;
+  }
+
+  .focus-ring:focus-visible {
+    outline-color: rgb(var(--color-focus));
+  }
+
+  .content-shell {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: var(--page-gutter);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-top {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
 }
 
-html {
-  scroll-behavior: smooth;
-}
+@layer components {
+  /* Professional interaction treatment for authenticated client routes and the gallery. */
+  .client-theme [data-ui="button"] {
+    transition-property: background-color, background-image, border-color, box-shadow, color, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+  .client-theme [data-ui="button"][data-variant="primary"] {
+    background-image: linear-gradient(135deg, #002a31 0%, #043840 100%);
+    box-shadow: 0 1px 1px rgb(0 20 24 / 0.2), 0 6px 14px rgb(0 42 49 / 0.16);
+  }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
+  .client-theme [data-ui="button"][data-variant="secondary"],
+  .client-theme [data-ui="button"][data-variant="outline"] {
+    box-shadow: 0 1px 1px rgb(0 42 49 / 0.04);
+  }
 
-.focus-ring {
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-}
+  /* Native select behavior stays accessible while its client presentation is more deliberate. */
+  .client-theme [data-ui="select"] {
+    background-image: linear-gradient(45deg, transparent 50%, #496269 50%), linear-gradient(135deg, #496269 50%, transparent 50%), linear-gradient(to right, rgb(0 42 49 / 0.1), rgb(0 42 49 / 0.1));
+    background-position: calc(100% - 1.18rem) 50%, calc(100% - 0.88rem) 50%, calc(100% - 2.9rem) 50%;
+    background-repeat: no-repeat;
+    background-size: 0.38rem 0.38rem, 0.38rem 0.38rem, 1px 1.45rem;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 1px 2px rgb(0 42 49 / 0.04);
+    transition: border-color 150ms cubic-bezier(0.2, 0, 0, 1), box-shadow 150ms cubic-bezier(0.2, 0, 0, 1), background-color 150ms cubic-bezier(0.2, 0, 0, 1);
+  }
 
-.focus-ring:focus-visible {
-  outline-color: #187064;
+  .client-theme [data-ui="select"]:hover:not(:disabled) {
+    border-color: rgb(var(--color-action-primary) / 0.38);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8), 0 4px 10px rgb(0 42 49 / 0.07);
+  }
+
+  .client-theme [data-ui="select"]:focus {
+    border-color: rgb(var(--color-focus));
+    box-shadow: 0 0 0 3px rgb(var(--color-focus) / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  }
+
+  /* Compact, squared-off labels echo traditional operational dashboards. */
+  .client-theme [data-ui="status-badge"] {
+    position: relative;
+    min-height: 1.65rem;
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.5rem 0.375rem 1.25rem;
+    font-size: 0.65rem;
+    font-weight: 750;
+    letter-spacing: 0.055em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .client-theme [data-ui="status-badge"]::before {
+    position: absolute;
+    top: 50%;
+    left: 0.55rem;
+    width: 0.35rem;
+    height: 0.35rem;
+    border-radius: 999px;
+    background: currentColor;
+    content: "";
+    opacity: 0.72;
+    transform: translateY(-50%);
+  }
+
+  .client-theme [data-ui="product-loading"] {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8), var(--shadow-soft);
+  }
+
+  .client-theme .product-loading-scan {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -35%;
+    width: 30%;
+    background: linear-gradient(90deg, transparent, rgb(85 214 190 / 0.16), transparent);
+    transform: skewX(-18deg);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .client-theme [data-ui="button"]:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+
+    .client-theme [data-ui="button"][data-variant="primary"]:not(:disabled):hover {
+      background-image: linear-gradient(135deg, #00313a 0%, #06434d 100%);
+      box-shadow: 0 2px 2px rgb(0 20 24 / 0.18), 0 10px 20px rgb(0 42 49 / 0.2);
+    }
+
+    .client-theme [data-ui="button"][data-variant="secondary"]:not(:disabled):hover,
+    .client-theme [data-ui="button"][data-variant="outline"]:not(:disabled):hover {
+      border-color: rgb(var(--color-action-primary) / 0.28);
+      box-shadow: 0 6px 14px rgb(0 42 49 / 0.09);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .client-theme [data-ui="button"]:not(:disabled):active {
+      transform: translateY(0) scale(0.985);
+      transition-duration: 80ms;
+    }
+
+    .client-theme [data-ui="button"][data-variant="primary"]:not(:disabled):active {
+      background-image: linear-gradient(135deg, #001d22 0%, #002a31 100%);
+      box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.22), 0 1px 3px rgb(0 42 49 / 0.14);
+    }
+
+    .client-theme .product-loading-scan {
+      animation: product-loading-scan 1.9s ease-in-out infinite;
+    }
+  }
+
+  @keyframes product-loading-scan {
+    from { left: -35%; }
+    to { left: 110%; }
+  }
+
+  /* Supplier data can contain unbounded Latin, Chinese, or Bangla copy. */
+  #client-content :where(h1, h2, h3, p, dd) {
+    overflow-wrap: anywhere;
+  }
+
+  /* The estimate CTA sits above, rather than behind, the client mobile nav. */
+  @media (max-width: 1023px) {
+    #client-content .fixed.inset-x-0.bottom-0.z-20 {
+      bottom: calc(4.25rem + env(safe-area-inset-bottom));
+    }
+  }
 }

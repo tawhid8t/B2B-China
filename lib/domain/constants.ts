@@ -2,6 +2,8 @@ export const USER_ROLES = ["client", "staff_receiver", "staff_packer", "admin", 
 
 export const SUPPORTED_PRODUCT_PROVIDERS = ["alibaba1688", "taobao"] as const;
 
+export const PRODUCT_SOURCES = ["alibaba1688", "taobao", "tmall"] as const;
+
 export const ORDER_STATUSES = [
   "pending_admin_review",
   "confirmed",

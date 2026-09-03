@@ -1,0 +1,408 @@
+{
+  "schemaVersion": 1,
+  "referencePackId": "bridgecart-client-mobile-v1",
+  "visualDirection": "Premium Dark Accent Commerce",
+  "approvalStatus": "approved-reference-authority-v1",
+  "screenCount": 23,
+  "browserViewportCalibration": {
+    "standaloneCandidate": "430x932",
+    "status": "unapproved",
+    "note": "The 853 x 1844 standalone renders appear close to a 2x large-phone canvas, but browser content bounds must be measured before pixel comparison."
+  },
+  "authorityRules": [
+    "Business truth overrides illustrative screenshot data.",
+    "Reference images govern presentation only and do not authorize routes, APIs, or workflows.",
+    "Simulated device frames, OS status bars, and home indicators are excluded from web implementation.",
+    "Overlapping screen variants require an approved primary/secondary designation before fidelity work."
+  ],
+  "overlapGroups": [
+    {
+      "groupId": "dashboard-composition",
+      "proposedPrimary": "dashboard-mobile-standalone",
+      "proposedSecondary": "dashboard-mobile-compact",
+      "status": "approved",
+      "reason": "The standalone image is the higher-resolution full-page composition; the compact board remains useful for alternate density and component evidence."
+    },
+    {
+      "groupId": "orders-composition",
+      "proposedPrimary": "orders-mobile-standalone",
+      "proposedSecondary": "orders-mobile-compact",
+      "status": "approved",
+      "reason": "The standalone image is the higher-resolution full-page composition; the compact board remains useful for alternate list density and row anatomy."
+    },
+    {
+      "groupId": "wallet-composition",
+      "proposedPrimary": "wallet-mobile-standalone",
+      "proposedSecondary": "wallet-mobile-compact",
+      "status": "approved",
+      "reason": "The standalone image is the higher-resolution full-page composition; the compact board remains useful for a simpler ledger composition."
+    }
+  ],
+  "originals": [
+    {
+      "originalId": "orders-standalone",
+      "file": "originals/orders-standalone.png",
+      "sourceFilename": "Premium Dark Accent Commerce (1).png",
+      "width": 853,
+      "height": 1844,
+      "sha256": "ED47D73D7270726C717EE302DB557F4397631BC988BAB0BDC8728B1C44149777"
+    },
+    {
+      "originalId": "dashboard-standalone",
+      "file": "originals/dashboard-standalone.png",
+      "sourceFilename": "Premium Dark Accent Commerce (2).png",
+      "width": 853,
+      "height": 1844,
+      "sha256": "A5A1423201DC0B110D89A0000B50A60CD54D4AEA309CC59184A4CB48693ACF34"
+    },
+    {
+      "originalId": "wallet-standalone",
+      "file": "originals/wallet-standalone.png",
+      "sourceFilename": "Premium Dark Accent Commerce (3).png",
+      "width": 853,
+      "height": 1844,
+      "sha256": "033AC8EC7BC6CB16331B2F7A57671CDBB971433C793AFDBD73E0AAB28F00D899"
+    },
+    {
+      "originalId": "core-workspace-board",
+      "file": "originals/core-workspace-board.png",
+      "sourceFilename": "exec-e1d5d4b7-0bd1-4bea-9984-8fcb50e815fb.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "605690A16E717A43EE8503C509FA5AEF9B7672C6A82637A4A8E6E02D94D7EAFE"
+    },
+    {
+      "originalId": "ordering-flow-board",
+      "file": "originals/ordering-flow-board.png",
+      "sourceFilename": "exec-ce5eed25-1de0-4390-91cc-58bf70738d55.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "C61B0234842C770DECA6B35E8D284BE823365DA67EA6367138C0E570EDE5BB3E"
+    },
+    {
+      "originalId": "estimate-statement-board",
+      "file": "originals/estimate-statement-board.png",
+      "sourceFilename": "exec-c9ef245a-2d0e-46b8-a1a2-191546a58a3f.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "A37A0EA5ADEEEB28A5AB5D651DF531C0722944993036F806D541EAF42789B681"
+    },
+    {
+      "originalId": "engagement-account-board",
+      "file": "originals/engagement-account-board.png",
+      "sourceFilename": "exec-ee4cf0df-79eb-46ee-b347-a1b638eeba55.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "04A855F48C0B3DEDB66DDD39DC08DF1B5B4299DF1075D76193C640E70E436999"
+    },
+    {
+      "originalId": "access-settings-help-board",
+      "file": "originals/access-settings-help-board.png",
+      "sourceFilename": "exec-021667f0-0d25-4e8e-9151-1b9f6f5a9615.png",
+      "width": 1448,
+      "height": 1086,
+      "sha256": "074D31D58620F9CD0A5D1897EF505E53067E13220D5C8770E001922D8FDA2A03"
+    }
+  ],
+  "screens": [
+    {
+      "screenId": "orders-mobile-standalone",
+      "title": "Orders",
+      "route": "/client/orders",
+      "state": "populated-list",
+      "implementationStatus": "implemented-responsive-gap",
+      "authorityStatus": "approved-primary",
+      "asset": "originals/orders-standalone.png",
+      "source": { "originalId": "orders-standalone", "crop": null },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": false,
+      "notes": "High-resolution composition candidate. Search, filters, counts, sample orders, amounts, and expiry content are illustrative."
+    },
+    {
+      "screenId": "dashboard-mobile-standalone",
+      "title": "Dashboard",
+      "route": "/client",
+      "state": "populated-overview",
+      "implementationStatus": "implemented",
+      "authorityStatus": "approved-primary",
+      "asset": "originals/dashboard-standalone.png",
+      "source": { "originalId": "dashboard-standalone", "crop": null },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": false,
+      "notes": "High-resolution composition candidate. Paid-period chart, QC data, shipment data, and all figures are illustrative unless supported by current APIs."
+    },
+    {
+      "screenId": "wallet-mobile-standalone",
+      "title": "Wallet",
+      "route": "/client/wallet",
+      "state": "populated-ledger",
+      "implementationStatus": "implemented",
+      "authorityStatus": "approved-primary",
+      "asset": "originals/wallet-standalone.png",
+      "source": { "originalId": "wallet-standalone", "crop": null },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": false,
+      "notes": "High-resolution composition candidate. Chart series and all balances, rates, and ledger entries are illustrative."
+    },
+    {
+      "screenId": "dashboard-mobile-compact",
+      "title": "Dashboard compact variant",
+      "route": "/client",
+      "state": "populated-overview",
+      "implementationStatus": "implemented",
+      "authorityStatus": "approved-secondary",
+      "asset": "screens/dashboard-mobile-compact.png",
+      "source": { "originalId": "core-workspace-board", "crop": { "x": 157, "y": 10, "width": 385, "height": 645 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Secondary overlapping composition candidate."
+    },
+    {
+      "screenId": "orders-mobile-compact",
+      "title": "Orders compact variant",
+      "route": "/client/orders",
+      "state": "populated-list",
+      "implementationStatus": "implemented-responsive-gap",
+      "authorityStatus": "approved-secondary",
+      "asset": "screens/orders-mobile-compact.png",
+      "source": { "originalId": "core-workspace-board", "crop": { "x": 694, "y": 10, "width": 385, "height": 645 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Secondary overlapping composition candidate."
+    },
+    {
+      "screenId": "order-detail-mobile",
+      "title": "Order detail",
+      "route": "/client/orders/:id",
+      "state": "populated-detail",
+      "implementationStatus": "route-absent",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/order-detail-mobile.png",
+      "source": { "originalId": "core-workspace-board", "crop": { "x": 157, "y": 682, "width": 385, "height": 520 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Visual coverage only; does not authorize the missing order-detail route or contract."
+    },
+    {
+      "screenId": "wallet-mobile-compact",
+      "title": "Wallet compact variant",
+      "route": "/client/wallet",
+      "state": "populated-ledger",
+      "implementationStatus": "implemented",
+      "authorityStatus": "approved-secondary",
+      "asset": "screens/wallet-mobile-compact.png",
+      "source": { "originalId": "core-workspace-board", "crop": { "x": 694, "y": 682, "width": 385, "height": 520 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Secondary overlapping composition candidate."
+    },
+    {
+      "screenId": "new-order-entry-mobile",
+      "title": "New Order link entry",
+      "route": "/client/order/new",
+      "state": "empty-entry",
+      "implementationStatus": "implemented",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/new-order-entry-mobile.png",
+      "source": { "originalId": "ordering-flow-board", "crop": { "x": 86, "y": 9, "width": 470, "height": 556 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": false,
+      "notes": "1688-only reference; supported-link copy must follow current product rules."
+    },
+    {
+      "screenId": "product-loading-mobile",
+      "title": "Product loading",
+      "route": "/client/order/new",
+      "state": "resolving-product",
+      "implementationStatus": "implemented",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/product-loading-mobile.png",
+      "source": { "originalId": "ordering-flow-board", "crop": { "x": 686, "y": 9, "width": 470, "height": 556 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": false,
+      "notes": "Progress percentage is illustrative and must not imply unsupported provider progress reporting."
+    },
+    {
+      "screenId": "sku-selection-sheet-mobile",
+      "title": "SKU selection sheet",
+      "route": "/client/order/new",
+      "state": "visual-variant-selection",
+      "implementationStatus": "implemented-responsive-gap",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/sku-selection-sheet-mobile.png",
+      "source": { "originalId": "ordering-flow-board", "crop": { "x": 86, "y": 609, "width": 470, "height": 592 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": false,
+      "notes": "Prices, stock, selection, and estimated total are illustrative."
+    },
+    {
+      "screenId": "size-quantities-sheet-mobile",
+      "title": "Size quantities sheet",
+      "route": "/client/order/new",
+      "state": "quantity-per-size-selection",
+      "implementationStatus": "implemented-responsive-gap",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/size-quantities-sheet-mobile.png",
+      "source": { "originalId": "ordering-flow-board", "crop": { "x": 686, "y": 609, "width": 470, "height": 592 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": false,
+      "notes": "Stock and estimate figures are illustrative."
+    },
+    {
+      "screenId": "estimate-review-mobile",
+      "title": "Estimate review",
+      "route": "/client/order/new",
+      "state": "review-before-confirmation",
+      "implementationStatus": "component-unreachable-contract-gap",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/estimate-review-mobile.png",
+      "source": { "originalId": "estimate-statement-board", "crop": { "x": 27, "y": 29, "width": 280, "height": 1114 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Does not resolve the persisted multi-SKU estimate contract gap."
+    },
+    {
+      "screenId": "submission-result-mobile",
+      "title": "Submission result",
+      "route": null,
+      "state": "submission-success",
+      "implementationStatus": "dedicated-route-absent",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/submission-result-mobile.png",
+      "source": { "originalId": "estimate-statement-board", "crop": { "x": 329, "y": 29, "width": 282, "height": 1114 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Visual success-state reference only."
+    },
+    {
+      "screenId": "product-statement-list-mobile",
+      "title": "Product Statement",
+      "route": "/client/excel-details",
+      "state": "populated-list",
+      "implementationStatus": "implemented-responsive-gap",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/product-statement-list-mobile.png",
+      "source": { "originalId": "estimate-statement-board", "crop": { "x": 637, "y": 29, "width": 284, "height": 1114 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Metrics and rows are illustrative; server pagination and actual DTO remain authoritative."
+    },
+    {
+      "screenId": "product-statement-detail-mobile",
+      "title": "Product Statement detail",
+      "route": null,
+      "state": "populated-detail",
+      "implementationStatus": "dedicated-route-absent",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/product-statement-detail-mobile.png",
+      "source": { "originalId": "estimate-statement-board", "crop": { "x": 944, "y": 29, "width": 282, "height": 1114 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Visual coverage only; no new detail route or API is authorized."
+    },
+    {
+      "screenId": "favorites-mobile",
+      "title": "Favorites",
+      "route": "/client/favorites",
+      "state": "populated-list",
+      "implementationStatus": "route-and-contract-incomplete",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/favorites-mobile.png",
+      "source": { "originalId": "engagement-account-board", "crop": { "x": 167, "y": 14, "width": 324, "height": 590 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Does not authorize revision-unsafe refresh or incomplete Favorites behavior."
+    },
+    {
+      "screenId": "repeat-order-mobile",
+      "title": "Repeat Order",
+      "route": null,
+      "state": "repeat-sku-selection",
+      "implementationStatus": "workflow-incomplete",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/repeat-order-mobile.png",
+      "source": { "originalId": "engagement-account-board", "crop": { "x": 688, "y": 14, "width": 324, "height": 590 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Visual coverage only; current Repeat Order contract gaps remain."
+    },
+    {
+      "screenId": "notifications-mobile",
+      "title": "Notifications",
+      "route": "/client/notifications",
+      "state": "populated-inbox",
+      "implementationStatus": "implemented-link-gap",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/notifications-mobile.png",
+      "source": { "originalId": "engagement-account-board", "crop": { "x": 167, "y": 632, "width": 324, "height": 555 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Notification content is illustrative; current missing order-detail destination remains a product gap."
+    },
+    {
+      "screenId": "account-mobile",
+      "title": "Account",
+      "route": "/client/account",
+      "state": "read-only-account",
+      "implementationStatus": "implemented-read-only",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/account-mobile.png",
+      "source": { "originalId": "engagement-account-board", "crop": { "x": 687, "y": 632, "width": 324, "height": 555 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Profile fields and verified state are illustrative and do not authorize profile editing."
+    },
+    {
+      "screenId": "login-mobile",
+      "title": "Login",
+      "route": "/auth/login",
+      "state": "signed-out",
+      "implementationStatus": "implemented",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/login-mobile.png",
+      "source": { "originalId": "access-settings-help-board", "crop": { "x": 27, "y": 39, "width": 325, "height": 930 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Credentials and support destination are illustrative."
+    },
+    {
+      "screenId": "access-blocked-mobile",
+      "title": "Access blocked",
+      "route": "/auth/forbidden",
+      "state": "forbidden-role",
+      "implementationStatus": "implemented",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/access-blocked-mobile.png",
+      "source": { "originalId": "access-settings-help-board", "crop": { "x": 382, "y": 39, "width": 325, "height": 930 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Presentation reference only; authorization remains server-controlled."
+    },
+    {
+      "screenId": "settings-mobile",
+      "title": "Settings",
+      "route": "/client/settings",
+      "state": "mixed-availability",
+      "implementationStatus": "route-absent",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/settings-mobile.png",
+      "source": { "originalId": "access-settings-help-board", "crop": { "x": 740, "y": 39, "width": 322, "height": 930 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Does not authorize device preferences, cache controls, notification preferences, or language behavior."
+    },
+    {
+      "screenId": "help-mobile",
+      "title": "Help",
+      "route": null,
+      "state": "help-index",
+      "implementationStatus": "client-route-absent-public-guidance-exists",
+      "authorityStatus": "coverage-reference",
+      "asset": "screens/help-mobile.png",
+      "source": { "originalId": "access-settings-help-board", "crop": { "x": 1096, "y": 39, "width": 322, "height": 930 } },
+      "containsSimulatedOsChrome": true,
+      "containsSimulatedDeviceFrame": true,
+      "notes": "Public help pages exist, but this does not authorize a new in-client help workflow or contact configuration."
+    }
+  ]
+}

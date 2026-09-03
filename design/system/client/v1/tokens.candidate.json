@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "schemaVersion": 1,
+    "tokenSetId": "bridgecart-client-design-v1-candidate",
+    "status": "approved-for-client-web",
+    "visualDirection": "Premium Dark Accent Commerce",
+    "referenceManifest": "../../../reference/client-mobile/v1/manifest.json",
+    "scope": "Authenticated client web and shared authentication presentation only",
+    "applicationStatus": "preview-scoped"
+  },
+  "color": {
+    "canvas": "#F8FAFA",
+    "surface": "#FFFFFF",
+    "surfaceMuted": "#F5F8F8",
+    "surfaceStrong": "#002A31",
+    "foreground": "#09262B",
+    "foregroundStrong": "#002A31",
+    "muted": "#5F6D73",
+    "border": "#DFE5E6",
+    "borderStrong": "#CAD4D6",
+    "focus": "#087A6B",
+    "action": {
+      "primary": "#002A31",
+      "hover": "#003942",
+      "active": "#001D22",
+      "soft": "#E7F4F2",
+      "onAction": "#FFFFFF",
+      "mintBright": "#9CF1DA"
+    },
+    "accent": {
+      "mint": "#55D6BE",
+      "aqua": "#45C4DD",
+      "violet": "#7C6CFF",
+      "coral": "#F27868"
+    },
+    "status": {
+      "success": {
+        "text": "#0C7965",
+        "accent": "#20B89C",
+        "soft": "#E6F7F3"
+      },
+      "warning": {
+        "text": "#8A5A08",
+        "accent": "#E9A23B",
+        "soft": "#FFF4DF"
+      },
+      "danger": {
+        "text": "#A93D47",
+        "accent": "#F27868",
+        "soft": "#FDEDEE"
+      },
+      "info": {
+        "text": "#256F82",
+        "accent": "#45C4DD",
+        "soft": "#E8F7FA"
+      }
+    },
+    "gradient": {
+      "primary": "linear-gradient(135deg, #002A31 0%, #043840 100%)",
+      "mintAction": "linear-gradient(135deg, #A6F3DE 0%, #86EACF 100%)"
+    }
+  },
+  "typography": {
+    "familyDecision": {
+      "status": "approved",
+      "recommendedPrimary": "Inter",
+      "recommendedStack": "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans Bengali, Noto Sans SC, Noto Sans, sans-serif",
+      "currentWebPrimary": "Open Sans",
+      "nativeReference": "SF Pro Text / SF Pro Display on iOS and platform sans on Android",
+      "reason": "Inter is the closest stable cross-platform candidate to the compact SF-style reference proportions; Open Sans is visibly wider and more humanist."
+    },
+    "weight": {
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "role": {
+      "display": { "fontSize": 36, "lineHeight": 44, "fontWeight": 700, "letterSpacingEm": -0.025 },
+      "pageTitle": { "fontSize": 32, "lineHeight": 40, "fontWeight": 700, "letterSpacingEm": -0.025 },
+      "title": { "fontSize": 24, "lineHeight": 32, "fontWeight": 700, "letterSpacingEm": -0.015 },
+      "sectionTitle": { "fontSize": 20, "lineHeight": 28, "fontWeight": 700, "letterSpacingEm": -0.01 },
+      "body": { "fontSize": 16, "lineHeight": 24, "fontWeight": 400, "letterSpacingEm": 0 },
+      "bodyStrong": { "fontSize": 16, "lineHeight": 24, "fontWeight": 600, "letterSpacingEm": 0 },
+      "label": { "fontSize": 14, "lineHeight": 20, "fontWeight": 600, "letterSpacingEm": 0 },
+      "caption": { "fontSize": 12, "lineHeight": 16, "fontWeight": 500, "letterSpacingEm": 0 },
+      "micro": { "fontSize": 11, "lineHeight": 14, "fontWeight": 600, "letterSpacingEm": 0.01 },
+      "eyebrow": { "fontSize": 12, "lineHeight": 16, "fontWeight": 700, "letterSpacingEm": 0.08 },
+      "financialDisplay": { "fontSize": 36, "lineHeight": 44, "fontWeight": 700, "letterSpacingEm": -0.02, "fontVariantNumeric": "tabular-nums" },
+      "financialBody": { "fontSize": 16, "lineHeight": 24, "fontWeight": 600, "letterSpacingEm": 0, "fontVariantNumeric": "tabular-nums" }
+    }
+  },
+  "spacing": {
+    "scale": [0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64],
+    "pageGutter": {
+      "smallPhone": 16,
+      "standardPhone": 20,
+      "tablet": 24,
+      "desktop": 32
+    },
+    "pageTop": {
+      "phone": 24,
+      "tablet": 32,
+      "desktop": 40
+    },
+    "sectionGap": {
+      "compact": 16,
+      "standard": 24,
+      "roomy": 32
+    },
+    "cardPadding": {
+      "compact": 16,
+      "standard": 20,
+      "roomy": 24
+    }
+  },
+  "radius": {
+    "small": 8,
+    "control": 12,
+    "card": 20,
+    "panel": 24,
+    "sheet": 28,
+    "full": 999
+  },
+  "border": {
+    "defaultWidth": 1,
+    "strongWidth": 1
+  },
+  "shadow": {
+    "soft": "0 1px 2px rgba(0, 42, 49, 0.04), 0 8px 24px rgba(0, 42, 49, 0.06)",
+    "panel": "0 12px 32px rgba(0, 42, 49, 0.10)",
+    "overlay": "0 24px 64px rgba(0, 31, 37, 0.22)",
+    "sticky": "0 -8px 24px rgba(0, 42, 49, 0.08)"
+  },
+  "control": {
+    "compactHeight": 40,
+    "minimumTouchTarget": 44,
+    "standardHeight": 48,
+    "largeHeight": 52,
+    "horizontalPadding": {
+      "compact": 12,
+      "standard": 16,
+      "large": 20
+    }
+  },
+  "icon": {
+    "family": "Lucide outline",
+    "strokeWidth": {
+      "standard": 2,
+      "emphasis": 2.25,
+      "primaryNavigation": 2.5
+    },
+    "size": {
+      "small": 16,
+      "standard": 20,
+      "large": 24,
+      "primaryAction": 32
+    },
+    "container": {
+      "compact": 36,
+      "standard": 40,
+      "touch": 44,
+      "primaryNavigation": 56
+    }
+  },
+  "layout": {
+    "contentMaxWidth": 1280,
+    "readingMaxWidth": 736,
+    "formMaxWidth": 576,
+    "desktopSidebarWidth": 288,
+    "mobileAppBarMinimumHeight": 56,
+    "mobileNavigationMinimumHeight": 68,
+    "safeAreaPolicy": "Add environment safe-area insets to sticky top and bottom surfaces"
+  },
+  "breakpoint": {
+    "base": 0,
+    "sm": 640,
+    "md": 768,
+    "lg": 1024,
+    "xl": 1280,
+    "2xl": 1536
+  },
+  "motion": {
+    "fastMs": 150,
+    "baseMs": 200,
+    "slowMs": 300,
+    "standardEasing": "cubic-bezier(0.2, 0, 0, 1)",
+    "reducedMotionPolicy": "Remove non-essential transitions and animations"
+  },
+  "contrastEvidence": [
+    { "pair": "foreground on surface", "ratio": 15.86 },
+    { "pair": "muted on surface", "ratio": 5.35 },
+    { "pair": "on-action on primary", "ratio": 15.27 },
+    { "pair": "success text on success soft", "ratio": 4.81 },
+    { "pair": "warning text on warning soft", "ratio": 5.43 },
+    { "pair": "danger text on danger soft", "ratio": 5.38 },
+    { "pair": "info text on info soft", "ratio": 5.2 },
+    { "pair": "focus on surface", "ratio": 5.24 }
+  ]
+}

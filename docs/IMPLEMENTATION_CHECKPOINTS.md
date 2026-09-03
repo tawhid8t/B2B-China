@@ -153,7 +153,8 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-007; CP-009; CP-010.
 - **Relevant specification:** `BUSINESS_RULES.md` §§2, 5; `DATABASE_DESIGN.md` §12; `SPEC_DECISIONS.md` SD-008.
 - **Acceptance criteria:** Only super admin changes global settings; changes are audited; historical estimates retain their stored values.
-- **Status:** PENDING
+- **Status:** READY
+- **Implementation note (2026-08-26):** Versioned operational setting persistence, owner-only RLS, and auditing are implemented; the super-admin management interface remains pending.
 - **Verification command:** `npm test -- settings-authorization`
 
 ### CP-016
@@ -163,8 +164,8 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-014; CP-015; CP-010.
 - **Relevant specification:** `BUSINESS_RULES.md` §5; `DATABASE_DESIGN.md` §6; `API_CONTRACT.md` §4.1.
 - **Acceptance criteria:** An estimate stores a full immutable breakdown and validity time; all calculation inputs come from snapshots/settings rather than constants.
-- **Status:** PENDING
-- **Verification command:** `npm test -- estimates-create`
+- **Status:** COMPLETE
+- **Verification command:** `npm run test:estimates`
 
 ### CP-017
 
@@ -173,8 +174,9 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-016; CP-008.
 - **Relevant specification:** `STATUS_MACHINE.md` §3; `API_CONTRACT.md` §4.3.
 - **Acceptance criteria:** Only valid transitions occur; expired estimates cannot be accepted; rejection/expiry creates audit history.
-- **Status:** PENDING
-- **Verification command:** `npm test -- estimate-transitions`
+- **Status:** READY
+- **Implementation note (2026-08-26):** Rejection and expired-acceptance prevention are implemented; a scheduled/system expiry transition with its own audit event remains pending.
+- **Verification command:** `npm run test:estimates`
 
 ### CP-018
 
@@ -183,8 +185,8 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-016; CP-017; CP-008; CP-010.
 - **Relevant specification:** `STATUS_MACHINE.md` §§3–5; `API_CONTRACT.md` §4.2; `SPEC_DECISIONS.md` SD-003.
 - **Acceptance criteria:** `POST /api/estimates/:id/accept` atomically creates `pending_admin_review` order data, joins/creates the active group, and writes status/audit events.
-- **Status:** PENDING
-- **Verification command:** `npm test -- estimate-accept`
+- **Status:** COMPLETE
+- **Verification command:** `npm run test:estimates`
 
 ### CP-019
 
@@ -213,7 +215,7 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-018; CP-007; CP-010.
 - **Relevant specification:** `STATUS_MACHINE.md` §4; `API_CONTRACT.md` §5.3; `SPEC_DECISIONS.md` SD-015.
 - **Acceptance criteria:** Admin can make only valid transitions, enter `confirmed` before purchase queue, and submit a reason for every override/financial correction.
-- **Status:** PENDING
+- **Status:** PARTIAL â€” Phase 1 product-order aggregation, grouped pending review, and atomic admin confirmation into one purchase batch are implemented. Product-wide purchase-task, extension, provider-capture, and purchased-detail work remains pending.
 - **Verification command:** `npm test -- admin-orders`
 
 ## Payments, wallet, and purchasing
@@ -225,7 +227,7 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** Owner/developer response.
 - **Relevant specification:** `SPEC_DECISIONS.md` OC-001 and OC-002.
 - **Acceptance criteria:** Wallet commitment event, partial-balance behavior, reservation release, and linked reversal representation are approved in the specification.
-- **Status:** BLOCKED
+- **Status:** COMPLETE — owner confirmed partial reservation without negative balances and linked immutable corrections.
 - **Verification command:** `rg -n 'OC-001|OC-002' docs/SPEC_DECISIONS.md`
 
 ### CP-023
@@ -235,8 +237,8 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-012; CP-007; CP-010.
 - **Relevant specification:** `BUSINESS_RULES.md` §3.2; `DATABASE_DESIGN.md` §8.1; `API_CONTRACT.md` §7.1.
 - **Acceptance criteria:** A client uploads a private proof and creates only a `pending` proof; upload alone never changes wallet balance.
-- **Status:** PENDING
-- **Verification command:** `npm test -- payment-proof-upload`
+- **Status:** COMPLETE — private multipart proof submission, pending persistence, and client history are implemented.
+- **Verification command:** `node --test tests/wallet/client-funding-flow-static.test.mjs`
 
 ### CP-024
 
@@ -245,7 +247,7 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** Owner/developer response.
 - **Relevant specification:** `SPEC_DECISIONS.md` OC-004.
 - **Acceptance criteria:** Documented endpoint/action names and authorization for both transitions are approved.
-- **Status:** BLOCKED
+- **Status:** COMPLETE — owner confirmed explicit needs-review and cancellation actions.
 - **Verification command:** `rg -n 'OC-004' docs/SPEC_DECISIONS.md`
 
 ### CP-025
@@ -255,8 +257,8 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-022; CP-023; CP-024; CP-007; CP-010.
 - **Relevant specification:** `STATUS_MACHINE.md` §§6–7; `API_CONTRACT.md` §§7.2–7.3; `SPEC_DECISIONS.md` SD-010.
 - **Acceptance criteria:** Only authorized actors review proofs; approval posts one immutable wallet credit with session-derived actor and audit data; rejection/review/cancellation follow the approved transitions.
-- **Status:** PENDING
-- **Verification command:** `npm test -- payment-review`
+- **Status:** COMPLETE â€” protected review actions, atomic idempotent approval credit, signed proof preview, client result notifications, and super-admin payment settings are implemented.
+- **Verification command:** `node --test tests/wallet/admin-payment-review-static.test.mjs`
 
 ### CP-026
 
@@ -265,8 +267,9 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-022; CP-025; CP-018; CP-010.
 - **Relevant specification:** `BUSINESS_RULES.md` §3; `DATABASE_DESIGN.md` §8.2; `API_CONTRACT.md` §7.4; `SPEC_DECISIONS.md` SD-013.
 - **Acceptance criteria:** Ledger balances are derived from immutable posted entries; order references appear in statements; partial-balance behavior matches the approved decision.
-- **Status:** PENDING
-- **Verification command:** `npm test -- wallet-ledger`
+- **Status:** COMPLETE — canonical client/admin statements, safe adjustments, linked corrections, CSV exports, partial order reservations, cancellation releases, and audited purchase commitment are implemented.
+- **Verification command:** `node --test tests/wallet/*.test.mjs`
+- **Phase 6 closure:** Protected financial summaries, live dashboard counts, recipient-scoped wallet notifications, and zero-anomaly reconciliation are deployed.
 
 ### CP-027
 
@@ -275,7 +278,7 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-021; CP-007; CP-010.
 - **Relevant specification:** `STATUS_MACHINE.md` §8; `DATABASE_DESIGN.md` §9; `API_CONTRACT.md` §9.1.
 - **Acceptance criteria:** Only admin-approved orders enter a batch/queue; extension queue access is protected; state/audit events are persisted.
-- **Status:** PENDING
+- **Status:** PARTIAL â€” product-wide purchase tasks, cart-result persistence, and grouped admin queue are implemented. Provider capture/finalization remains pending.
 - **Verification command:** `npm test -- purchase-queue`
 
 ### CP-028
@@ -399,8 +402,8 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-016; CP-025; CP-032; CP-035; CP-010.
 - **Relevant specification:** `BUSINESS_RULES.md` §16; `API_CONTRACT.md` §§12, 15.
 - **Acceptance criteria:** Required estimate/payment/QC/pickup events create client/admin/staff notifications; recipients can list and mark only their own notifications read.
-- **Status:** PENDING
-- **Verification command:** `npm test -- notifications`
+- **Status:** PARTIAL — the wallet/payment subset is complete: proof submission and review, insufficient-wallet, reservation-release, and wallet-correction events create recipient-scoped notifications with paginated list/read APIs and client/admin inboxes. Estimate, QC, and pickup events remain in their operational checkpoints.
+- **Verification command:** `npm run test:notifications`
 
 ### CP-040
 
@@ -409,5 +412,26 @@ Status meanings: `COMPLETE` is accepted and verified; `READY` can be assigned no
 - **Dependencies:** CP-011; CP-012; CP-039; all MVP workflow checkpoints.
 - **Relevant specification:** `DEVELOPMENT_ROADMAP.md` Phase 15; `AGENTS.md` database/security rules.
 - **Acceptance criteria:** Role/RLS tests pass; private files are inaccessible without signed authorization; financial/status/manual-override audits are present; all project checks pass.
-- **Status:** PENDING
+- **Status:** PARTIAL — wallet/payment release checks pass, proof storage is private, financial reconciliation is clean, and the linked Phase 6 migrations/advisors were verified. Global readiness remains dependent on unfinished QC/reporting workflows and pre-existing project-wide advisor findings.
 - **Verification command:** `npm run build`
+
+### CP-041
+
+- **ID:** CP-041
+- **Objective:** Implement the public Product Directory catalog UI with static-friendly mock rendering.
+- **Dependencies:** CP-001; CP-002.
+- **Relevant specification:** `AGENTS.md`; `BUSINESS_RULES.md` §§4–5; `DATABASE_DESIGN.md` §5.
+- **Acceptance criteria:** An unauthenticated visitor can browse a responsive product grid at `/catalog`, search and filter local mock products, and continue to account creation without public live-search or database writes.
+- **Status:** COMPLETE
+- **Verification command:** `npm run typecheck && npm run lint && npm run build`
+
+### CP-042
+
+- **ID:** CP-042
+- **Objective:** Connect public catalog estimate actions to the authenticated estimate/order pipeline.
+- **Dependencies:** CP-013; persisted catalog product links and SKUs.
+- **Relevant specification:** `AGENTS.md`; `BUSINESS_RULES.md` §§4–7; `DATABASE_DESIGN.md` §§5–7, 16.
+- **Acceptance criteria:** Unauthenticated visitors are sent to login; authenticated clients submit catalog requests through the protected estimate API and the request is persisted against client-owned product snapshots without bypassing RLS.
+- **Status:** PENDING
+- **Notes:** `/api/estimates` now calculates from persisted product/configuration snapshots and creates client-owned estimate rows. Completion remains pending because static mock catalog products have no persisted `product_links`/`product_skus` UUIDs and the authenticated client page does not yet submit the resolved product selection.
+- **Verification command:** `npm run typecheck && npm run lint && npm run build`

@@ -26,8 +26,3 @@ export function getSupabasePublicEnv(): SupabasePublicEnv {
     anonKey: result.data.NEXT_PUBLIC_SUPABASE_ANON_KEY
   };
 }
-
-export function getOptionalOtapiKey() {
-  const value = process.env.OTAPI_KEY?.trim();
-  return value || undefined;
-}

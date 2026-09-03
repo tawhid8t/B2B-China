@@ -19,8 +19,10 @@ Business rules should be enforced by backend logic, database constraints, admin 
 ### 2.2 Default Exchange Rate
 
 - Super admin must be able to set a default CNY-to-BDT exchange rate.
+- The initial production default is `1 CNY = 19.2000 BDT`.
 - The default exchange rate is used when no client-specific advance balance is available.
 - Exchange rates must be stored historically.
+- Exchange-rate rows are append-only; a changed default creates a newly effective row.
 - Old orders must not change when the default exchange rate changes.
 
 ### 2.3 Advance Payment Exchange Rate
@@ -44,16 +46,25 @@ Business rules should be enforced by backend logic, database constraints, admin 
 - Every credit, debit, refund, and adjustment must create a wallet transaction.
 - Existing approved wallet transactions must not be edited.
 - If correction is needed, the system must create an adjustment transaction.
+- A full or partial refund/adjustment must link to the original transaction and include a reason.
+
+### 3.1.1 Wallet Totals
+
+- `total funds` includes posted credits, debits, refunds, and adjustments but excludes reservation and reservation-release entries.
+- `active reservations` is the remaining net CNY held by posted reservation entries and their releases.
+- `available balance` is the sum of every posted ledger entry and must never be negative.
 
 ### 3.2 Wallet Credit
 
 - Wallet credit is created only after admin approval.
 - Client-uploaded proof alone does not increase wallet balance.
 - Payment proof status values should include `pending`, `approved`, `rejected`, and `needs_review`.
+- The client-claimed BDT amount remains historical. If admin approves a different verified amount, both amounts and the required reason must remain visible.
 
 ### 3.3 Wallet Debit
 
-- Confirmed orders may reserve or debit wallet balance depending on final system design.
+- Confirmed orders reserve only available wallet funds; confirmation never posts the final order debit and never makes the wallet negative.
+- At audited supplier purchase commitment, release the active reservation and debit only the wallet-covered amount.
 - Wallet debit should show:
   - Order reference
   - Product reference
@@ -66,7 +77,7 @@ Business rules should be enforced by backend logic, database constraints, admin 
 
 - If wallet balance is enough, the order uses wallet credit.
 - If wallet balance is partially enough, the system applies wallet balance first.
-- Any remaining amount is charged using default or admin-adjusted exchange rate.
+- Any remaining amount is priced using the order/estimate snapshot rate or an admin-adjusted rate with a required audit reason.
 - Client must receive a visible alert when wallet balance is insufficient.
 
 ## 4. Product Link Rules
@@ -154,7 +165,9 @@ The estimate must include:
 - Every confirmed estimate creates an order item.
 - One product/SKU/quantity combination should be tracked as one order item.
 - Each order item must belong to one client.
-- Each order item should eventually belong to one order group.
+- SKU-level order items remain the operational source of truth for purchasing, wallet, status, and audit history.
+- One client submission for one product creates one product order containing all submitted SKU lines. A later submission of the same product creates a separate product order.
+- Product orders are workflow/display aggregates only; they do not replace SKU-level order items.
 
 ### 6.2 Order Statuses
 
@@ -189,39 +202,11 @@ Recommended order statuses:
 - After purchase, financial edits must create an audit log.
 - After parcel receiving, quantity/weight changes must be recorded as corrections.
 
-## 7. Order Group Rules
+## 7. Legacy Order Groups
 
-### 7.1 Group Creation
+Order groups are retained only for historical records and compatibility. New client orders must not create or join an order group. Existing group IDs, group history, and legacy records must remain readable; they must not be deleted or rewritten as part of the retirement.
 
-- Each client should have an active order group.
-- New confirmed orders are added to the active group.
-- If no active group exists, the system creates one automatically.
-
-### 7.2 Group Capacity
-
-- One group can contain up to 40 fulfilled order items.
-- When 40 fulfilled items are reached, the group closes.
-- The next order creates or joins a new group.
-
-### 7.3 Group Display
-
-Client group view must show:
-
-- Product images
-- Product names
-- SKU/variant
-- Quantity
-- Estimated cost
-- Real cost if available
-- Order status
-- Group totals
-- Payment/wallet usage
-
-### 7.4 Group Filtering
-
-- Client and admin can filter groups by date.
-- Client and admin can filter groups by month.
-- Admin can filter groups by client, status, and payment condition.
+The client-facing replacement is the product statement defined in `docs/CLIENT_PRODUCT_STATEMENT.md`. It groups display data by product link while preserving the SKU-level order records underneath.
 
 ## 8. Purchasing Rules
 
@@ -229,6 +214,7 @@ Client group view must show:
 
 - Orders must be admin-approved before entering the purchase queue.
 - Admin should verify product, SKU, quantity, price, and delivery fee before purchase.
+- Admin confirms the complete product order in one action. Every SKU line records `pending_admin_review` to `confirmed` to `queued_for_purchase`, and one purchase batch contains all of those SKU lines.
 
 ### 8.2 Chrome Extension Purchasing
 
@@ -237,6 +223,10 @@ Client group view must show:
 - Admin manually checks cart before payment.
 - Admin manually completes payment.
 - Extension syncs paid amount, provider order number, seller tracking number, and provider status.
+- Each queued product order has one persisted purchase task. Its task state is separate from SKU fulfillment status and may be `queued`, `cart_added`, `awaiting_provider_details`, `awaiting_admin_confirmation`, `needs_review`, or `confirmed`.
+- A confirmed product-wide cart addition is stored before provider purchase details are captured. Until final purchase confirmation, SKU order items remain `queued_for_purchase`.
+- The extension receives one version-2 task per product order. It opens the product once, prepares every requested SKU/color/size and quantity, validates every current SKU price, then performs one cart action. It must never turn a multi-SKU task into sequential cart additions.
+- A missing, unavailable, ambiguous, changed-price, or unsupported multi-SKU layout is a product-wide `needs_review` result. No cart action occurs until an explicit reviewed-price retry can revalidate every requested line.
 
 ### 8.3 Provider Price Difference
 

@@ -4,20 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BridgeCart Purchase Assistant</title>
-    <style>
-      body { width: 340px; margin: 0; font-family: Arial, sans-serif; color: #172026; background: #f7f4ef; }
-      main { padding: 16px; }
-      button { width: 100%; border: 0; border-radius: 6px; background: #187064; color: #fff; padding: 10px 12px; font-weight: 700; cursor: pointer; }
-      pre { white-space: pre-wrap; background: #fff; border: 1px solid #ded8cc; border-radius: 6px; padding: 10px; max-height: 220px; overflow: auto; }
-    </style>
+    <style>body{width:390px;margin:0;font:14px/1.4 Arial,sans-serif;color:#172026;background:#f7f4ef}main{padding:16px}h1{margin:0;font-size:20px}button{border:0;border-radius:6px;background:#187064;color:#fff;padding:9px 11px;font-weight:700;cursor:pointer}button.secondary{background:#e8e2d8;color:#172026}input{box-sizing:border-box;width:100%;margin:8px 0;padding:9px;border:1px solid #cfc7b9;border-radius:6px}#queue{display:grid;gap:10px;margin-top:12px}.item{display:grid;grid-template-columns:58px 1fr;gap:10px;padding:10px;border:1px solid #ded8cc;border-radius:8px;background:#fff}.image{width:58px;height:58px;object-fit:cover;border-radius:5px;background:#eee8dd}.meta{color:#64706f;font-size:12px;white-space:pre-wrap}.status{display:inline-block;margin-top:5px;padding:2px 6px;border-radius:999px;background:#e8e2d8;font-size:11px;font-weight:700;text-transform:uppercase}.needs-review{background:#ffe5b0}.failed{background:#ffd9d4}.cart-added{background:#ccebdd}.notice{margin:10px 0 0;padding:9px;border-radius:6px;background:#fff;border:1px solid #ded8cc;white-space:pre-wrap}.actions{display:flex;gap:8px;margin-top:8px}.actions button{flex:1}</style>
   </head>
   <body>
     <main>
-      <h1>BridgeCart</h1>
-      <p>Fetch approved purchase queue and assist admin cart entry.</p>
-      <button id="fetchQueue">Fetch queue</button>
-      <pre id="output">No queue loaded.</pre>
+      <h1>Purchase queue</h1>
+      <p id="connectionState" class="meta">Not connected</p>
+      <input id="credential" type="password" autocomplete="off" placeholder="Paste extension credential" />
+      <div class="actions"><button id="connect">Connect</button><button id="disconnect" class="secondary">Disconnect</button></div>
+      <div class="actions"><button id="refresh" class="secondary">Refresh queue</button></div>
+      <div class="actions"><button id="captureOrder" class="secondary">Capture 1688 Order</button></div>
+      <p id="notice" class="notice">Connect an admin-issued extension credential.</p>
+      <section id="capture" aria-live="polite"></section>
+      <section id="queue" aria-live="polite"></section>
     </main>
+    <script src="api.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

@@ -1,11 +1,11 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
-import { getSupabasePublicEnv } from "@/lib/config/env";
 import { cookies } from "next/headers";
+import { getSupabasePublicEnv } from "@/lib/config/env";
 
-export async function createSupabaseServerClient(request?: Request) {
+export async function createSupabaseServerClient(_request?: Request) {
   const cookieStore = await cookies();
   const { url, anonKey } = getSupabasePublicEnv();
-  const authorization = request?.headers.get("authorization");
+  const authorization = _request?.headers.get("authorization");
 
   return createServerClient(url, anonKey, {
     global: authorization ? { headers: { Authorization: authorization } } : undefined,
@@ -14,7 +14,11 @@ export async function createSupabaseServerClient(request?: Request) {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet: Parameters<SetAllCookies>[0]) {
-        cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        } catch {
+          // Server Components cannot write cookies. Middleware refreshes them.
+        }
       }
     }
   });

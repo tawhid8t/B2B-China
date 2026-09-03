@@ -1,0 +1,31 @@
+{
+  "phase": 7,
+  "referencePack": "design/reference/client-mobile/v1/manifest.json",
+  "primaryMobileViewport": { "width": 430, "height": 932 },
+  "currentPage": "product-statement",
+  "pages": [
+    { "id": "dashboard", "route": "/client", "status": "approved" },
+    { "id": "orders", "route": "/client/orders", "status": "approved" },
+    { "id": "new-order", "route": "/client/order/new", "status": "approved" },
+    { "id": "wallet", "route": "/client/wallet", "status": "pending" },
+    { "id": "product-statement", "route": "/client/excel-details", "status": "in_progress" },
+    { "id": "notifications", "route": "/client/notifications", "status": "pending" },
+    { "id": "account", "route": "/client/account", "status": "pending" },
+    { "id": "login", "route": "/auth/login", "status": "pending" },
+    { "id": "access-blocked", "route": "/auth/forbidden", "status": "pending" }
+  ],
+  "orderFlow": {
+    "currentSubphase": "7G",
+    "subphases": [
+      { "id": "7A", "name": "Product Resolution Reliability", "status": "approved" },
+      { "id": "7B", "name": "Link Entry and Loading", "status": "approved" },
+      { "id": "7C", "name": "Product, Color, Size, and Quantity Selection", "status": "approved" },
+      { "id": "7D", "name": "Estimate Review", "status": "approved" },
+      { "id": "7E", "name": "Confirmation and Result", "status": "approved" },
+      { "id": "7F", "name": "Product Statement List", "status": "approved" },
+      { "id": "7G", "name": "Product Statement Detail", "status": "approved" },
+      { "id": "7H", "name": "End-to-End Lock", "status": "pending" }
+    ]
+  },
+  "deferredReferences": ["order-detail", "dedicated-submission-result", "product-statement-detail", "favorites-repeat", "settings", "in-client-help"]
+}

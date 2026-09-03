@@ -96,6 +96,10 @@ exception
 | `exception` | Previous active status | admin | Problem resolved |
 | `exception` | `cancelled` | admin | Problem cannot be resolved |
 
+For a product order containing several SKU lines, an admin confirmation performs the first two transitions for every line in one transaction. Both status events are retained even though `confirmed` is not displayed as a separate queue.
+
+Before any `queued_for_purchase` SKU reaches `purchased`, the associated purchase task may move from `queued` to `cart_added` only after one verified product-wide cart action. A failed validation moves the task to `needs_review` and does not change SKU order statuses.
+
 ## 4.3 Client-Facing Status Mapping
 
 | Internal Status | Client Display |
@@ -125,7 +129,9 @@ exception
 - QC failed items cannot be packed unless admin approves.
 - Completed orders should be read-only except for super admin correction.
 
-## 5. Order Group Status Machine
+## 5. Legacy Order Group Status Machine
+
+Order-group status is retained solely to interpret records created before group retirement. New orders must not create or transition groups; client shipping progress is derived from SKU-level order statuses and displayed through the product statement.
 
 ## 5.1 Group Statuses
 
@@ -217,7 +223,8 @@ cancelled
 ## 7.3 Wallet Rules
 
 - Posted wallet transactions must not be edited or deleted.
-- Reversal should create a new transaction or mark reversed with linked adjustment.
+- Reversal never mutates the posted original. It creates a linked posted refund or adjustment with the opposite financial effect and a required reason.
+- Full and partial corrections are allowed, but cumulative corrections cannot exceed the original transaction.
 - Running balance must be recalculated or validated after each posted transaction.
 
 ## 8. Purchase Batch Status Machine
@@ -245,6 +252,10 @@ exception
 | `purchased` | `closed` | admin | Batch review complete |
 | Any active status | `exception` | admin/extension | Provider sync or purchase issue |
 | Any active status | `cancelled` | admin | Batch cancelled |
+
+## 8.3 Product Purchase Task States
+
+`queued`, `cart_added`, `awaiting_provider_details`, `awaiting_admin_confirmation`, `needs_review`, and `confirmed` describe the product-wide purchasing task. They do not replace the SKU-level order status machine. A cart result can only mark a task `cart_added` after every SKU in that product order is reported prepared and one cart-add confirmation is present.
 
 ## 9. Provider Order Status Machine
 

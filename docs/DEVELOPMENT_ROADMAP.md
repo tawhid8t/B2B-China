@@ -261,6 +261,12 @@ Allow admin to review, approve, adjust, and control all orders.
 
 ## 10. Phase 7: Wallet And Payment System
 
+**Implementation status (2026-08-30): COMPLETE.** The six wallet/payment
+delivery phases are deployed, including private proofs, admin review/settings,
+immutable ledgers/corrections/exports, partial non-negative order coverage,
+recipient-scoped notifications, live dashboards, and reconciliation. The
+persisted default rate is `1 CNY = 19.2000 BDT`.
+
 ## Goal
 
 Replace manual advance-money bookkeeping with a wallet ledger.

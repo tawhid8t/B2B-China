@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ProductProviderError, identifyProductSource, normalize1688ItemId, normalizeOtapiProduct, resolveProductFromProvider } from "../../services/product-provider-service.ts";
+import { ProductProviderError, identifyProductSource, normalize1688ItemId, normalizeOtapiProduct, resolveProductFromProvider, resolveSharedProductLink } from "../../services/product-provider-service.ts";
 
 test("recognizes 1688, Taobao, and Tmall product links", () => {
   assert.deepEqual(identifyProductSource("https://detail.1688.com/offer/123456789.html"), {
@@ -26,6 +26,17 @@ test("normalizes 1688 URLs and offer IDs for OTAPI without double prefixing", ()
   for (const invalidInput of ["hello", "https://google.com/12345", "https://detail.1688.com/"]) {
     assert.throws(() => normalize1688ItemId(invalidInput), (error) => error instanceof ProductProviderError && error.kind === "invalid_link" && error.message === "Invalid 1688 product URL or offer ID.");
   }
+});
+
+test("extracts the offer ID from an 1688 mobile share message", async () => {
+  const shared = "【Children's sandals】\nCopy code, open Mobile Alibaba:\nhttps://qr.1688.com/s/Fh43xNTh CZ4878";
+  const canonical = await resolveSharedProductLink(shared, {
+    fetcher: async (url) => {
+      assert.equal(url, "https://qr.1688.com/s/Fh43xNTh");
+      return new Response("wireless1688://ma.m.1688.com/offer?id=963858155430.html&offerId=963858155430", { status: 200 });
+    }
+  });
+  assert.equal(canonical, "https://detail.1688.com/offer/963858155430.html");
 });
 
 test("normalizes OTAPI product payloads and preserves the raw payload", () => {

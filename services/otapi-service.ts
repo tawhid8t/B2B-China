@@ -1,1 +1,1 @@
-export { identifyProductSource, normalizeOtapiProduct, ProductProviderError, resolveProductFromProvider } from "@/services/product-provider-service";
+export { identifyProductSource, normalizeOtapiProduct, ProductProviderError, resolveProductFromProvider, resolveSharedProductLink } from "@/services/product-provider-service";

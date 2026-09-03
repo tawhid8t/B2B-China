@@ -23,6 +23,42 @@ export class ProductProviderError extends Error {
   }
 }
 
+/**
+ * Mobile 1688 shares contain descriptive text plus a qr.1688.com URL. The
+ * short-link response is plain text with a `wireless1688://` deep link, not
+ * an HTTP redirect, so resolve that trusted response before normal lookup.
+ */
+export async function resolveSharedProductLink(input: string, options: { fetcher?: typeof fetch } = {}): Promise<string> {
+  const extractedUrl = extractSharedUrl(input);
+  let parsed: URL;
+  try {
+    parsed = new URL(extractedUrl);
+  } catch {
+    throw new ProductProviderError("invalid_link", "Paste a public 1688, Taobao, or Tmall product link.");
+  }
+
+  if (parsed.hostname.toLowerCase() !== "qr.1688.com") return parsed.toString();
+
+  let response: Response;
+  try {
+    response = await (options.fetcher ?? fetch)(parsed.toString(), {
+      headers: { Accept: "text/plain,text/html;q=0.9,*/*;q=0.8" },
+      cache: "no-store"
+    });
+  } catch {
+    throw new ProductProviderError("lookup_failed", "We could not open the shared 1688 link. Try again shortly.", { source: "alibaba1688", retryable: true, retryAfterSeconds: 5 });
+  }
+  if (!response.ok) {
+    throw new ProductProviderError("lookup_failed", "We could not open the shared 1688 link. Try again shortly.", { source: "alibaba1688", retryable: true, retryAfterSeconds: 5, status: response.status });
+  }
+
+  const offerId = extractSharedOfferId(await response.text());
+  if (!offerId) {
+    throw new ProductProviderError("manual_review_required", "This shared 1688 link does not include a product offer ID. Paste the original product link or submit it for manual review.", { source: "alibaba1688" });
+  }
+  return `https://detail.1688.com/offer/${offerId}.html`;
+}
+
 export function identifyProductSource(url: string): ProductLinkIdentity {
   let parsed: URL;
   try {
@@ -261,6 +297,16 @@ function extract1688OfferId(parsed: URL) {
   if (offerFromPath) return offerFromPath;
   const offerFromQuery = parsed.searchParams.get("offerId");
   return offerFromQuery && /^\d+$/.test(offerFromQuery) ? offerFromQuery : undefined;
+}
+
+function extractSharedUrl(input: string) {
+  const match = input.trim().match(/https?:\/\/[^\s\]\[<>"'，。、】【）)]+/iu);
+  return match?.[0] ?? input.trim();
+}
+
+function extractSharedOfferId(responseText: string) {
+  return /(?:[?&]|\b)offerId=(\d{5,})(?:[.&?]|\b)/i.exec(responseText)?.[1]
+    ?? /\/offer\?id=(\d{5,})\.html/i.exec(responseText)?.[1];
 }
 
 function extractProviderItemId(parsed: URL) {

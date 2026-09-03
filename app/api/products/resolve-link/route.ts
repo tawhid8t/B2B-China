@@ -1,4 +1,4 @@
-import { ProductProviderError, resolveProductFromProvider } from "@/services/otapi-service";
+import { ProductProviderError, resolveProductFromProvider, resolveSharedProductLink } from "@/services/otapi-service";
 import { apiError, apiSuccess } from "@/lib/api/response";
 import { authorizeApiRequest } from "@/lib/auth/api";
 import { CLIENT_OPERATION_ROLES } from "@/lib/auth/roles";
@@ -7,7 +7,7 @@ import { resolveAndPersistProduct } from "@/services/product-resolution-service"
 import { createSupabaseProductRepository } from "@/services/supabase-product-repository";
 import { z } from "zod";
 
-const bodySchema = z.object({ url: z.string().url() });
+const bodySchema = z.object({ url: z.string().trim().min(1).max(4_000) });
 
 export async function POST(request: Request) {
   const authorization = await authorizeApiRequest(request, CLIENT_OPERATION_ROLES);
@@ -23,9 +23,10 @@ export async function POST(request: Request) {
   if (!body.success) return apiError("VALIDATION_ERROR", "A valid product URL is required.", 400, body.error.flatten());
 
   try {
+    const canonicalUrl = await resolveSharedProductLink(body.data.url);
     const repository = createSupabaseProductRepository(createSupabaseAdminClient());
     const product = await resolveAndPersistProduct(
-      { actorId: authorization.context.user.id, url: body.data.url },
+      { actorId: authorization.context.user.id, url: canonicalUrl },
       { repository, resolveProvider: resolveProductFromProvider }
     );
     const { resolutionMeta, ...data } = product;

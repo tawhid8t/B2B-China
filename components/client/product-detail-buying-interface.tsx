@@ -16,6 +16,7 @@ import {
 import { ShippingTariffSelector } from "@/components/client/shipping-tariff-selector";
 import type { ResolvedProduct } from "@/components/client/product-link-entry";
 import { type ShippingTariffItem } from "@/lib/shipping-tariffs";
+import { productImageSource } from "@/lib/ui/product-image";
 import {
   getDisplayVariantLabel,
   getMatchingVariantSkus,
@@ -580,7 +581,7 @@ function ProductGallery({
       <div className="relative aspect-square overflow-hidden rounded-panel border border-border bg-surface-muted">
         {image && !failed.includes(image) ? (
           <img
-            src={image}
+            src={productImageSource(image) ?? undefined}
             alt={`${product.title} product`}
             className="h-full w-full object-contain p-3"
             onError={() => setFailed((items) => [...items, image])}
@@ -608,7 +609,7 @@ function ProductGallery({
               )}
             >
               <img
-                src={item}
+                src={productImageSource(item) ?? undefined}
                 alt=""
                 className="h-full w-full object-contain p-1"
               />

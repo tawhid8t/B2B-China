@@ -3,6 +3,7 @@
 
 import { ImageOff } from "lucide-react";
 import { useState } from "react";
+import { productImageSource } from "@/lib/ui/product-image";
 import { cn } from "@/lib/ui/cn";
 
 export type ProductThumbnailProps = {
@@ -21,7 +22,7 @@ const sizeClasses = {
 
 export function ProductThumbnail({ src, alt, size = "md", className, imageClassName }: ProductThumbnailProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const imageSrc = proxiedImageSource(src);
+  const imageSrc = productImageSource(src);
   const canRender = Boolean(imageSrc && failedSrc !== imageSrc);
 
   return (
@@ -42,14 +43,4 @@ export function ProductThumbnail({ src, alt, size = "md", className, imageClassN
       )}
     </span>
   );
-}
-
-function proxiedImageSource(src: string | null | undefined) {
-  if (!src || src.startsWith("/") || src.startsWith("data:") || src.startsWith("/api/product-image")) return src;
-  try {
-    const source = new URL(src);
-    return source.protocol === "https:" ? `/api/product-image?src=${encodeURIComponent(source.toString())}` : src;
-  } catch {
-    return src;
-  }
 }

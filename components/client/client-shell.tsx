@@ -37,12 +37,15 @@ export function ClientShell({ user, unreadNotificationCount, children, visualPat
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuHistoryEntry = useRef<string | null>(null);
   const pendingMenuNavigation = useRef<string | null>(null);
+  const menuNavigationTimeout = useRef<number | null>(null);
   const pageTitle = pathname.startsWith("/client/order/new") ? "New order" : pathname.startsWith("/client/excel-details") ? "Excel details" : pathname.startsWith("/client/orders") ? "Orders" : pathname.startsWith("/client/wallet") ? "Wallet & payments" : pathname.startsWith("/client/notifications") ? "Notifications" : pathname.startsWith("/client/account") ? "Account" : "Dashboard";
   const isDashboard = pathname === "/client";
 
   useEffect(() => {
     function handlePopState() {
       if (!menuHistoryEntry.current) return;
+      if (menuNavigationTimeout.current !== null) window.clearTimeout(menuNavigationTimeout.current);
+      menuNavigationTimeout.current = null;
       menuHistoryEntry.current = null;
       setMobileMenuOpen(false);
       const destination = pendingMenuNavigation.current;
@@ -55,7 +58,15 @@ export function ClientShell({ user, unreadNotificationCount, children, visualPat
   }, [router]);
 
   useEffect(() => {
+    return () => {
+      if (menuNavigationTimeout.current !== null) window.clearTimeout(menuNavigationTimeout.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!menuHistoryEntry.current) return;
+    if (menuNavigationTimeout.current !== null) window.clearTimeout(menuNavigationTimeout.current);
+    menuNavigationTimeout.current = null;
     menuHistoryEntry.current = null;
     pendingMenuNavigation.current = null;
     setMobileMenuOpen(false);
@@ -96,6 +107,15 @@ export function ClientShell({ user, unreadNotificationCount, children, visualPat
   function navigateFromMobileMenu(href: string) {
     pendingMenuNavigation.current = href;
     closeMobileMenu();
+    // Mobile browsers can defer the popstate produced by history.back() while
+    // a dialog is closing. Route as a fallback so a menu selection is never lost.
+    menuNavigationTimeout.current = window.setTimeout(() => {
+      if (pendingMenuNavigation.current !== href) return;
+      menuHistoryEntry.current = null;
+      pendingMenuNavigation.current = null;
+      setMobileMenuOpen(false);
+      router.push(href);
+    }, 250);
   }
 
   return (

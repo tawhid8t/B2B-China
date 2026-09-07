@@ -84,15 +84,7 @@ export function ProductLinkEntry({ initialUrl = "", onResolved, className }: Pro
       return;
     }
 
-    let parsed: URL;
-    try {
-      parsed = new URL(value);
-      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error("Unsupported protocol");
-    } catch {
-      setFieldError("Enter a complete product URL, including https://.");
-      return;
-    }
-    if (!detectMarketplace(parsed.toString())) {
+    if (!detectMarketplace(value)) {
       setFieldError("Use a public product link from 1688, Taobao, or Tmall.");
       return;
     }
@@ -185,7 +177,7 @@ export function ProductLinkEntry({ initialUrl = "", onResolved, className }: Pro
     <div className={cn("space-y-4", className)}>
       <div>
         <h2 className="text-xl font-semibold tracking-tight text-foreground">Add a supplier product</h2>
-        <p className="mt-1 text-sm leading-6 text-muted">Paste a public 1688, Taobao, or Tmall product link to retrieve its available options.</p>
+        <p className="mt-1 text-sm leading-6 text-muted">Paste a public 1688, Taobao, or Tmall product link. 1688 mobile share messages are supported too.</p>
       </div>
       <form onSubmit={submit} noValidate className="space-y-3">
         <div className="relative">
@@ -193,7 +185,7 @@ export function ProductLinkEntry({ initialUrl = "", onResolved, className }: Pro
             ref={inputRef}
             id="supplier-product-link"
             label="Product link"
-            type="url"
+            type="text"
             inputMode="url"
             autoCapitalize="none"
             autoCorrect="off"
@@ -265,7 +257,8 @@ function ResolutionFailureState({ failure, onRetry }: { failure: ResolutionFailu
 
 function detectMarketplace(value: string): { label: "1688" | "Taobao" | "Tmall"; variant: "commerce" | "vermilion" | "gold" } | null {
   try {
-    const host = new URL(value.trim()).hostname.toLowerCase();
+    const link = value.trim().match(/https?:\/\/[^\s\]\[<>"'，。、】【）)]+/iu)?.[0] ?? value.trim();
+    const host = new URL(link).hostname.toLowerCase();
     if (host === "1688.com" || host.endsWith(".1688.com")) return { label: "1688", variant: "commerce" };
     if (host === "taobao.com" || host.endsWith(".taobao.com")) return { label: "Taobao", variant: "vermilion" };
     if (host === "tmall.com" || host.endsWith(".tmall.com")) return { label: "Tmall", variant: "gold" };

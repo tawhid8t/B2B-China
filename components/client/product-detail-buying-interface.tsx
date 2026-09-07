@@ -98,7 +98,7 @@ export function ProductDetailBuyingInterface({
   const [selection, setSelection] = useState<ProductSkuSelectionState>(
     () => createInitialVariantSelection(product.skus),
   );
-  const [weightInput, setWeightInput] = useState("");
+  const [weightInputGrams, setWeightInputGrams] = useState("");
   const [selectedTariff, setSelectedTariff] = useState<
     ShippingTariffItem | undefined
   >();
@@ -147,11 +147,12 @@ export function ProductDetailBuyingInterface({
       ),
     [product.domesticDeliveryCny, product.skus, selection],
   );
-  const unitWeightKg = weightInput.trim() ? Number(weightInput) : undefined;
+  const unitWeightGrams = weightInputGrams.trim() ? Number(weightInputGrams) : undefined;
+  const unitWeightKg = unitWeightGrams === undefined ? 0 : unitWeightGrams / 1_000;
   const weightReady =
-    unitWeightKg !== undefined &&
-    Number.isFinite(unitWeightKg) &&
-    unitWeightKg > 0;
+    unitWeightGrams !== undefined &&
+    Number.isFinite(unitWeightGrams) &&
+    unitWeightGrams > 0;
   const liveEstimate = useMemo(() => {
     if (!selectedLines.length || !selectedTariff || !weightReady || !reviewContext) return null;
     try {
@@ -299,7 +300,7 @@ export function ProductDetailBuyingInterface({
         );
       }
       setSelection(clearProductSkuSelection());
-      setWeightInput("");
+      setWeightInputGrams("");
       setSelectedTariff(undefined);
       setTariffQuery("");
       confirmIdempotencyKey.current = createIdempotencyKey();
@@ -321,7 +322,9 @@ export function ProductDetailBuyingInterface({
         lines={selectedLines}
         summary={summary}
         selectedTariff={selectedTariff}
+        tariffQuery={tariffQuery}
         weightReady={weightReady}
+        unitWeightGrams={unitWeightGrams}
         unitWeightKg={unitWeightKg}
         liveEstimate={liveEstimate}
         context={reviewContext}
@@ -329,6 +332,20 @@ export function ProductDetailBuyingInterface({
         contextError={reviewContextError}
         confirming={confirming}
         confirmError={confirmError}
+        onWeightChange={(value) => {
+          resetConfirmState();
+          setWeightInputGrams(value);
+        }}
+        onTariffQueryChange={(value) => {
+          resetConfirmState();
+          setTariffQuery(value);
+          if (selectedTariff && value !== selectedTariff.item) setSelectedTariff(undefined);
+        }}
+        onTariffSelect={(tariff) => {
+          resetConfirmState();
+          setSelectedTariff(tariff);
+          setTariffQuery(tariff.item);
+        }}
         onEdit={() => setReviewOpen(false)}
         onConfirm={() => void confirmOrder()}
       />
@@ -346,8 +363,8 @@ export function ProductDetailBuyingInterface({
             Review product and variants
           </h1>
           <p className="mt-2 max-w-reading text-sm leading-6 text-muted">
-            Supplier pricing is shown in CNY. The estimate updates locally as
-            you adjust variants, quantities, weight, and shipping tariff.
+            Supplier pricing is shown in CNY. Choose variants and quantities,
+            then review shipping details before confirmation.
           </p>
         </div>
         <Button variant="outline" onClick={onStartAgain}>
@@ -410,27 +427,10 @@ export function ProductDetailBuyingInterface({
             onReview={() => setReviewOpen(true)}
           />
         </section>
-        <div id="order-estimate-summary" className="min-w-0 scroll-mt-24 xl:sticky xl:top-24">
-          <EstimateSummaryPanel
+        <div id="order-estimate-summary" className="hidden min-w-0 scroll-mt-24 md:block xl:sticky xl:top-24">
+          <SelectionReviewPanel
             lines={selectedLines}
             summary={summary}
-            selectedTariff={selectedTariff}
-            tariffQuery={tariffQuery}
-            onTariffQueryChange={setTariffQuery}
-            onTariffSelect={(tariff) => {
-              resetConfirmState();
-              setSelectedTariff(tariff);
-            }}
-            weightInput={weightInput}
-            onWeightChange={(value) => {
-              resetConfirmState();
-              setWeightInput(value);
-            }}
-            liveEstimate={liveEstimate}
-            weightReady={weightReady}
-            confirmError={confirmError}
-            confirmWarning={confirmWarning}
-            confirmedOrders={confirmedOrders}
             onClear={clearSelection}
             onReview={() => setReviewOpen(true)}
           />
@@ -445,7 +445,9 @@ function DirectOrderReview({
   lines,
   summary,
   selectedTariff,
+  tariffQuery,
   weightReady,
+  unitWeightGrams,
   unitWeightKg,
   liveEstimate,
   context,
@@ -453,6 +455,9 @@ function DirectOrderReview({
   contextError,
   confirming,
   confirmError,
+  onWeightChange,
+  onTariffQueryChange,
+  onTariffSelect,
   onEdit,
   onConfirm,
 }: {
@@ -460,7 +465,9 @@ function DirectOrderReview({
   lines: SelectedSkuLine<ProductSku>[];
   summary: SupplierSelectionSummary;
   selectedTariff?: ShippingTariffItem;
+  tariffQuery: string;
   weightReady: boolean;
+  unitWeightGrams?: number;
   unitWeightKg?: number;
   liveEstimate: LiveEstimateBreakdown | null;
   context: OrderReviewContext | null;
@@ -468,6 +475,9 @@ function DirectOrderReview({
   contextError: string | null;
   confirming: boolean;
   confirmError: string | null;
+  onWeightChange: (value: string) => void;
+  onTariffQueryChange: (value: string) => void;
+  onTariffSelect: (value: ShippingTariffItem) => void;
   onEdit: () => void;
   onConfirm: () => void;
 }) {
@@ -488,8 +498,8 @@ function DirectOrderReview({
         <Button variant="outline" onClick={onEdit}>Back to selection</Button>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <section className="space-y-5">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <section className="min-w-0 space-y-5">
           <Card className="p-4 sm:p-5">
             <div className="flex items-start gap-3">
               <ProductThumbnail src={product.images[0]} alt={product.title} size="lg" className="h-16 w-16 rounded-control" />
@@ -507,11 +517,33 @@ function DirectOrderReview({
           </Card>
 
           <Card className="p-4 sm:p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-action-primary">Shipping estimate details</p>
+            <div className="mt-4 space-y-4">
+              <Input
+                id="estimated-unit-weight"
+                label="Approximate unit weight (g)"
+                type="number"
+                inputMode="numeric"
+                min="1"
+                step="1"
+                value={unitWeightGrams === undefined ? "" : String(unitWeightGrams)}
+                onChange={(event) => onWeightChange(event.target.value)}
+                placeholder="e.g. 200"
+                hint="Enter grams. We convert this to kilograms automatically for the shipping calculation."
+              />
+              {unitWeightGrams !== undefined && weightReady && <p className="text-sm text-muted">Unit weight: {(unitWeightGrams / 1000).toFixed(3)} kg</p>}
+              {!weightReady && <Alert variant="warning" title="Approximate weight required">Enter the product weight in grams to calculate shipping.</Alert>}
+              <ShippingTariffSelector value={selectedTariff} query={tariffQuery} onQueryChange={onTariffQueryChange} onSelect={onTariffSelect} />
+              {!selectedTariff && <Alert variant="warning" title="Shipping category required">Select a category to calculate international shipping.</Alert>}
+            </div>
+          </Card>
+
+          <Card className="p-4 sm:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-action-primary">Estimate breakdown</p>
             <dl className="mt-4 space-y-4 text-sm">
               <ReviewDetail label="Product subtotal" value={<PriceDisplay value={summary.supplierSubtotalCny} currency="CNY" showCode size="sm" />} />
               <ReviewDetail label="Supplier delivery" value={<PriceDisplay value={summary.domesticDeliveryCny} currency="CNY" showCode size="sm" />} />
-              <ReviewDetail label="Estimated weight" value={weightReady && liveEstimate ? `${liveEstimate.totalProductWeightKg} kg` : "Unavailable"} detail={unitWeightKg ? `${unitWeightKg} kg per unit` : "Add estimated unit weight"} />
+              <ReviewDetail label="Estimated weight" value={weightReady && liveEstimate ? `${liveEstimate.totalProductWeightKg} kg` : "Unavailable"} detail={unitWeightGrams ? `${unitWeightGrams} g per unit (${unitWeightKg?.toFixed(3)} kg)` : "Add approximate weight in grams"} />
               <ReviewDetail label="Bangladesh shipping category" value={selectedTariff?.item ?? "Not selected"} detail={selectedTariff ? `Tk ${selectedTariff.rateBdtPerKg}/kg` : undefined} />
               <ReviewDetail label="China warehouse processing" value={liveEstimate ? <PriceDisplay value={liveEstimate.chinaDomesticShippingCny} currency="CNY" showCode size="sm" /> : "Unavailable"} />
               <ReviewDetail label="China to Guangzhou" value={liveEstimate ? <PriceDisplay value={liveEstimate.chinaToGuangzhouCostCny} currency="CNY" showCode size="sm" /> : "Unavailable"} />
@@ -522,7 +554,7 @@ function DirectOrderReview({
           </Card>
         </section>
 
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+        <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
           <Card className="overflow-hidden border-action-primary/20 shadow-panel">
             <div className="bg-action-primary p-5 text-on-action">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-accent-mint">Estimated final total</p>
@@ -981,36 +1013,14 @@ function displayVariantValues(sku: ProductSku, names: string[]) {
   return names.map((name) => translateVariantValue(sku.attributes[name] ?? "-")).join(" / ");
 }
 
-function EstimateSummaryPanel({
-  lines,
-  summary,
-  selectedTariff,
-  tariffQuery,
-  onTariffQueryChange,
-  onTariffSelect,
-  weightInput,
-  onWeightChange,
-  liveEstimate,
-  weightReady,
-  confirmError,
-  confirmWarning,
-  confirmedOrders,
-  onClear,
-  onReview,
-}: {
+function SelectionReviewPanel({ lines, summary, selectedTariff, liveEstimate = null, confirmError = null, confirmWarning = null, confirmedOrders = [], onClear, onReview }: {
   lines: SelectedSkuLine<ProductSku>[];
   summary: SupplierSelectionSummary;
   selectedTariff?: ShippingTariffItem;
-  tariffQuery: string;
-  onTariffQueryChange: (value: string) => void;
-  onTariffSelect: (value: ShippingTariffItem) => void;
-  weightInput: string;
-  onWeightChange: (value: string) => void;
-  liveEstimate: LiveEstimateBreakdown | null;
-  weightReady: boolean;
-  confirmError: string | null;
-  confirmWarning: string | null;
-  confirmedOrders: ConfirmedOrder[];
+  liveEstimate?: LiveEstimateBreakdown | null;
+  confirmError?: string | null;
+  confirmWarning?: string | null;
+  confirmedOrders?: ConfirmedOrder[];
   onClear: () => void;
   onReview: () => void;
 }) {
@@ -1018,11 +1028,11 @@ function EstimateSummaryPanel({
     <Card className="overflow-hidden border-action-primary/20 shadow-panel">
       <div className="border-b border-action-primary/10 bg-action-soft p-5">
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-action-primary">
-          Live estimate
+          Selection summary
         </p>
-        <h2 className="mt-1 text-xl font-semibold">Confirm order</h2>
+        <h2 className="mt-1 text-xl font-semibold">Ready for estimate review</h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          This estimate is temporary and updates before anything is saved.
+          Add weight and a shipping category in the next step. Nothing is saved yet.
         </p>
       </div>
       <div className="space-y-5 p-5">
@@ -1035,35 +1045,7 @@ function EstimateSummaryPanel({
           value={summary.selectedPieces || "-"}
         />
         {lines.length > 0 && <SelectedLines lines={lines} />}
-        <Input
-          id="estimated-unit-weight"
-          label="Estimated unit weight (kg)"
-          type="number"
-          inputMode="decimal"
-          min="0.001"
-          step="0.001"
-          value={weightInput}
-          onChange={(event) => onWeightChange(event.target.value)}
-          hint="Required for shipping estimate. Use actual product/SKU weight when available."
-        />
-        {!weightReady && (
-          <Alert variant="warning" title="Product weight unavailable">
-            International shipping estimate cannot be calculated yet.
-          </Alert>
-        )}
-        <ShippingTariffSelector
-          value={selectedTariff}
-          query={tariffQuery}
-          onQueryChange={onTariffQueryChange}
-          onSelect={onTariffSelect}
-        />
-        {!selectedTariff && (
-          <Alert variant="warning" title="Shipping tariff required">
-            Select a tariff item before calculating the international shipping
-            estimate.
-          </Alert>
-        )}
-        <dl className="space-y-3 border-y border-border py-4 text-sm">
+        <dl className="hidden space-y-3 border-y border-border py-4 text-sm">
           <SummaryRow
             label="Product Base Cost"
             value={
@@ -1136,7 +1118,7 @@ function EstimateSummaryPanel({
             }
           />
         </dl>
-        <div className="grid gap-3 rounded-card bg-action-primary p-4 text-on-action">
+        <div className="hidden gap-3 rounded-card bg-action-primary p-4 text-on-action">
           <TotalRow
             label="Total Product Cost"
             value={
@@ -1169,7 +1151,7 @@ function EstimateSummaryPanel({
             }
           />
         </div>
-        {confirmedOrders.length > 0 && (
+        {false && confirmedOrders.length > 0 && (
           <Alert variant="success" title="Order confirmed">
             {confirmedOrders.map((order) => (
               <span
@@ -1188,12 +1170,12 @@ function EstimateSummaryPanel({
             ))}
           </Alert>
         )}
-        {confirmWarning && (
+        {false && confirmWarning && (
           <Alert variant="warning" title="Pending payment">
             {confirmWarning}
           </Alert>
         )}
-        {confirmError && (
+        {false && confirmError && (
           <Alert variant="danger" title="Order not confirmed">
             {confirmError}
           </Alert>

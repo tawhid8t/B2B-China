@@ -36,7 +36,7 @@ export function ShippingTariffSelector({
   }, [query]);
 
   return (
-    <section className="space-y-3">
+    <section className="min-w-0 space-y-3">
       <Input
         id="shipping-tariff-search"
         label="Shipping category"
@@ -45,7 +45,7 @@ export function ShippingTariffSelector({
         placeholder="Search product category..."
         hint={value ? `Selected: ${value.item} at Tk ${value.rateBdtPerKg}/kg` : "Select a tariff item to calculate international shipping."}
       />
-      <div className="max-h-72 space-y-3 overflow-y-auto rounded-card border border-border bg-surface p-3">
+      <div className="max-h-72 min-w-0 space-y-3 overflow-x-hidden overflow-y-auto rounded-card border border-border bg-surface p-3">
         {!groups.length && (
           <p className="px-1 py-3 text-sm text-muted">
             No tariff item matches this search.
@@ -66,7 +66,7 @@ export function ShippingTariffSelector({
                     size="sm"
                     onClick={() => onSelect(item)}
                     className={cn(
-                      "h-auto w-full justify-between whitespace-normal px-3 py-2 text-left",
+                      "h-auto min-w-0 w-full justify-between whitespace-normal px-3 py-2 text-left",
                       selected && "ring-1 ring-action-primary",
                     )}
                   >

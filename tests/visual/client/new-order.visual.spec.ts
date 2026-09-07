@@ -26,7 +26,7 @@ test("New Order fixture is responsive and validates its supported presentation s
   const productLink = page.getByRole("textbox", { name: "Product link" });
   await productLink.fill("not-a-product-url");
   await page.getByRole("button", { name: "Resolve product" }).click();
-  await expect(page.getByText("Enter a complete product URL, including https://.")).toBeVisible();
+  await expect(page.getByText("Use a public product link from 1688, Taobao, or Tmall.")).toBeVisible();
 
   await productLink.fill("https://example.com/products/123");
   await page.getByRole("button", { name: "Resolve product" }).click();
@@ -188,14 +188,12 @@ test("Subphase 7D reviews a complete estimate with current wallet coverage and p
 
   await page.getByRole("button", { name: "Review estimate", exact: true }).last().click();
   await expect(page.getByRole("heading", { name: "Review your order estimate" })).toBeVisible();
-  await expect(page.getByText("Estimated weight required")).toBeVisible();
+  await expect(page.getByText("Approximate weight required")).toBeVisible();
   await expect(page.getByRole("button", { name: "Confirm order" })).toBeDisabled();
-  await page.getByRole("button", { name: "Back to selection" }).click();
-
-  await page.getByRole("spinbutton", { name: "Estimated unit weight (kg)" }).fill("0.4");
+  await page.getByRole("spinbutton", { name: "Approximate unit weight (g)" }).fill("400");
   await page.getByRole("textbox", { name: "Shipping category" }).fill("Wallet");
   await page.getByRole("button", { name: /Wallet.*Tk 750\/kg/ }).click();
-  await page.getByRole("button", { name: "Review estimate", exact: true }).last().click();
+  await expect(page.getByRole("textbox", { name: "Shipping category" })).toHaveValue("Wallet");
 
   await expect(page.getByText("Estimate breakdown")).toBeVisible();
   await expect(page.getByText("Current exchange rate")).toBeVisible();
@@ -236,10 +234,10 @@ test("Subphase 7E submits once and presents authoritative confirmation facts", a
   const isPhone = testInfo.project.name === "mobile-430";
   if (isPhone) await page.getByRole("button", { name: /Increase Small quantity/i }).click();
   else await page.locator("tbody tr").filter({ hasText: "Small" }).getByRole("button", { name: "Select", exact: true }).click();
-  await page.getByRole("spinbutton", { name: "Estimated unit weight (kg)" }).fill("0.4");
+  await page.getByRole("button", { name: "Review estimate", exact: true }).last().click();
+  await page.getByRole("spinbutton", { name: "Approximate unit weight (g)" }).fill("400");
   await page.getByRole("textbox", { name: "Shipping category" }).fill("Wallet");
   await page.getByRole("button", { name: /Wallet.*Tk 750\/kg/ }).click();
-  await page.getByRole("button", { name: "Review estimate", exact: true }).last().click();
   await page.getByRole("button", { name: "Confirm order" }).click();
   await expect(page.getByText("Order not confirmed")).toBeVisible();
   await expect(page.getByText("The selected supplier SKU is no longer available.")).toBeVisible();

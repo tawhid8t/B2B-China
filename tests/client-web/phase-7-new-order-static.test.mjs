@@ -21,9 +21,9 @@ test("Phase 7 locks New Order before the Product Statement approval gate", () =>
   assert.equal(status.currentPage, "product-statement");
   assert.equal(status.pages.find((page) => page.id === "orders")?.status, "approved");
   assert.equal(status.pages.find((page) => page.id === "new-order")?.status, "approved");
-  assert.equal(status.pages.find((page) => page.id === "product-statement")?.status, "in_progress");
-  assert.equal(status.pages.filter((page) => page.status === "in_progress").length, 1);
-  assert.equal(status.orderFlow.currentSubphase, "7G");
+  assert.equal(status.pages.find((page) => page.id === "product-statement")?.status, "awaiting_owner_approval");
+  assert.equal(status.pages.filter((page) => page.status === "in_progress").length, 0);
+  assert.equal(status.orderFlow.currentSubphase, "7H");
   assert.equal(status.orderFlow.subphases.find((subphase) => subphase.id === "7A")?.status, "approved");
   assert.equal(status.orderFlow.subphases.find((subphase) => subphase.id === "7B")?.status, "approved");
   assert.equal(status.orderFlow.subphases.find((subphase) => subphase.id === "7C")?.status, "approved");
@@ -31,7 +31,7 @@ test("Phase 7 locks New Order before the Product Statement approval gate", () =>
   assert.equal(status.orderFlow.subphases.find((subphase) => subphase.id === "7E")?.status, "approved");
   assert.equal(status.orderFlow.subphases.find((subphase) => subphase.id === "7F")?.status, "approved");
   assert.equal(status.orderFlow.subphases.find((subphase) => subphase.id === "7G")?.status, "approved");
-  assert.ok(status.orderFlow.subphases.filter((subphase) => !["7A", "7B", "7C", "7D", "7E", "7F", "7G"].includes(subphase.id)).every((subphase) => subphase.status === "pending"));
+  assert.equal(status.orderFlow.subphases.find((subphase) => subphase.id === "7H")?.status, "awaiting_owner_approval");
 });
 
 test("Subphase 7B preserves links and distinguishes validation, cancellation, provider, manual-review, and connection states", () => {

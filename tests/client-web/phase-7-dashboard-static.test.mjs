@@ -22,8 +22,8 @@ test("Phase 7 retains the approved Dashboard and defers unsupported routes", () 
   assert.equal(status.pages.find((page) => page.id === "dashboard")?.status, "approved");
   assert.equal(status.pages.find((page) => page.id === "orders")?.status, "approved");
   assert.equal(status.pages.find((page) => page.id === "new-order")?.status, "approved");
-  assert.equal(status.pages.find((page) => page.id === "product-statement")?.status, "in_progress");
-  assert.equal(status.pages.filter((page) => page.status === "in_progress").length, 1);
+  assert.equal(status.pages.find((page) => page.id === "product-statement")?.status, "awaiting_owner_approval");
+  assert.equal(status.pages.filter((page) => page.status === "in_progress").length, 0);
   assert.ok(status.pages.filter((page) => !["dashboard", "orders", "new-order", "product-statement"].includes(page.id)).every((page) => page.status === "pending"));
   assert.deepEqual(status.primaryMobileViewport, { width: 430, height: 932 });
   assert.ok(status.deferredReferences.includes("favorites-repeat"));

@@ -20,8 +20,8 @@ test("Phase 7 retains approved Orders while Product Statement is under review", 
   assert.equal(status.pages.find((page) => page.id === "dashboard")?.status, "approved");
   assert.equal(status.pages.find((page) => page.id === "orders")?.status, "approved");
   assert.equal(status.pages.find((page) => page.id === "new-order")?.status, "approved");
-  assert.equal(status.pages.find((page) => page.id === "product-statement")?.status, "in_progress");
-  assert.equal(status.pages.filter((page) => page.status === "in_progress").length, 1);
+  assert.equal(status.pages.find((page) => page.id === "product-statement")?.status, "awaiting_owner_approval");
+  assert.equal(status.pages.filter((page) => page.status === "in_progress").length, 0);
 });
 
 test("Orders use authoritative status progress and retain expandable SKU details", () => {

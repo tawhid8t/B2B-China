@@ -3,7 +3,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, Button, Card, EmptyState, StatusBadge } from "@/components/ui";
+import { Alert, Button, Card, EmptyState, Modal, StatusBadge, Textarea } from "@/components/ui";
 
 type ProductOrder = any;
 
@@ -11,6 +11,8 @@ export function ProductOrderReviewCards({ orders }: { orders: ProductOrder[] }) 
   const router = useRouter();
   const [working, setWorking] = useState<string>();
   const [error, setError] = useState<string>();
+  const [decision, setDecision] = useState<{ orderId: string; kind: "cancelled" | "exception" }>();
+  const [reason, setReason] = useState("");
 
   async function confirm(orderId: string) {
     setWorking(orderId);
@@ -27,6 +29,37 @@ export function ProductOrderReviewCards({ orders }: { orders: ProductOrder[] }) 
     } finally {
       setWorking(undefined);
     }
+  }
+
+  async function submitDecision() {
+    if (!decision) return;
+    const normalizedReason = reason.trim();
+    if (!normalizedReason) return;
+    const workKey = `${decision.orderId}:${decision.kind}`;
+    setWorking(workKey);
+    setError(undefined);
+    try {
+      const response = await fetch(`/api/admin/product-orders/${decision.orderId}/decision`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ decision: decision.kind, reason: normalizedReason }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error?.message ?? "Review decision could not be recorded.");
+      setDecision(undefined);
+      setReason("");
+      router.refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Review decision could not be recorded.");
+    } finally {
+      setWorking(undefined);
+    }
+  }
+
+  function openDecision(orderId: string, kind: "cancelled" | "exception") {
+    setError(undefined);
+    setReason("");
+    setDecision({ orderId, kind });
   }
 
   if (!orders.length) {
@@ -60,7 +93,11 @@ export function ProductOrderReviewCards({ orders }: { orders: ProductOrder[] }) 
                 <p className="mt-1 text-sm text-muted">{product?.provider_item_id ?? "Provider item pending"} · {product?.provider ?? "Provider pending"}</p>
               </div>
             </div>
-            <Button size="sm" loading={working === order.id} onClick={() => confirm(order.id)}>Confirm and queue</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => openDecision(order.id, "exception")}>Mark exception</Button>
+              <Button size="sm" variant="danger" onClick={() => openDecision(order.id, "cancelled")}>Reject & cancel</Button>
+              <Button size="sm" loading={working === order.id} onClick={() => confirm(order.id)}>Confirm and queue</Button>
+            </div>
           </div>
           {uncovered > 0 && <Alert className="mt-5" variant="warning" title="Wallet payment still required">CNY {uncovered.toFixed(2)} is not covered by the client wallet reservation.</Alert>}
           <div className="mt-5 overflow-x-auto rounded-card border border-border">
@@ -76,6 +113,15 @@ export function ProductOrderReviewCards({ orders }: { orders: ProductOrder[] }) 
         </div>
       </Card>;
     })}
+    <Modal
+      open={Boolean(decision)}
+      onOpenChange={(open) => { if (!open) { setDecision(undefined); setReason(""); } }}
+      title={decision?.kind === "exception" ? "Mark product order as exception" : "Reject and cancel product order"}
+      description="This applies the decision to every SKU in this product submission. It cannot be partially applied."
+      footer={<div className="flex flex-wrap justify-end gap-2 pb-4"><Button variant="outline" onClick={() => { setDecision(undefined); setReason(""); }}>Keep pending</Button><Button variant={decision?.kind === "exception" ? "secondary" : "danger"} loading={Boolean(decision && working === `${decision.orderId}:${decision.kind}`)} disabled={!reason.trim()} onClick={() => void submitDecision()}>{decision?.kind === "exception" ? "Mark exception" : "Reject & cancel"}</Button></div>}
+    >
+      <Textarea label="Reason" required value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Explain this decision for the client and operations history." />
+    </Modal>
   </section>;
 }
 

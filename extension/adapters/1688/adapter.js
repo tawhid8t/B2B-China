@@ -10,8 +10,10 @@
     cartButtons: ["button", "a", "div[role='button']"],
     success: ["[class*='toast' i]", "[class*='message' i]", "[class*='success' i]"],
     cartCount: ["[data-cart-count]", "[data-role='purchase-cart-count']", "[class*='purchase-cart' i] [class*='count' i]", "[class*='purchase-cart' i] [class*='badge' i]", "#submitOrder [class*='cart' i][class*='count' i]", "#submitOrder [class*='cart' i][class*='badge' i]"],
-    orderRoots: ["[data-order-id]", "[class*='order-detail' i]", "[class*='trade-detail' i]", "[class*='order-success' i]"],
-    orderLines: ["[data-order-line]", "[data-offer-id]", "[class*='order-item' i]", "[class*='trade-item' i]"],
+    orderRoots: ["[data-order-id]", "[class*='order-detail' i]", "[class*='trade-detail' i]", "[class*='order-success' i]", "[class*='order-card' i]", "[class*='order-list-item' i]"],
+    orderLines: ["[data-order-line]", "[data-offer-id]", "[class*='order-item' i]", "[class*='trade-item' i]", "[class*='goods-item' i]", "[class*='product-item' i]"],
+    modernOrderTitles: [".product-list .title"],
+    modernOrderTotals: [".total-price-detail"],
     matrixBlocks: [".expand-view-list-wrapper", ".expand-view-list"],
     matrixRows: [".expand-view-list .expand-view-item", ".expand-view-list-wrapper .expand-view-item"],
     featureItems: [".feature-item"],
@@ -26,9 +28,9 @@
   const SELECTED_CLASSES = ["selected", "active", "is-selected", "checked", "current", "sku-selected"];
   const DISABLED_CLASSES = ["disabled", "is-disabled", "unavailable", "sold-out"];
   const ATTRIBUTE_GROUP_ALIASES = {
-    "\u989c\u8272": ["\u989c\u8272", "\u989c\u8272\u5206\u7c7b", "\u8272\u53f7"],
-    "\u5c3a\u7801": ["\u5c3a\u7801", "\u5c3a\u7801\u9009\u62e9", "\u7801\u6570", "\u5c3a\u7801\u89c4\u683c"],
-    "\u89c4\u683c": ["\u89c4\u683c", "\u89c4\u683c\u578b\u53f7", "\u578b\u53f7"],
+    "\u989c\u8272": ["\u989c\u8272", "\u989c\u8272\u5206\u7c7b", "\u8272\u53f7", "color", "colour"],
+    "\u5c3a\u7801": ["\u5c3a\u7801", "\u5c3a\u7801\u9009\u62e9", "\u7801\u6570", "\u5c3a\u7801\u89c4\u683c", "size", "sizes"],
+    "\u89c4\u683c": ["\u89c4\u683c", "\u4ea7\u54c1\u89c4\u683c", "\u89c4\u683c\u578b\u53f7", "\u578b\u53f7", "specification", "product specification"],
   };
   const result = (ok, code, message, extra = {}) => ({ ok, code, message, ...extra });
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,10 +42,28 @@
   function normalize(value) {
     return String(value ?? "").normalize("NFKC").replace(/[\s\u3000]+/g, " ").replace(/[，,;；/|]+/g, " ").trim().toLocaleLowerCase();
   }
+  // Supplier feeds and browser translation disagree on a few harmless set
+  // labels (for example, "Gray five sets" vs "Grey five-piece set"). This
+  // is used only for color-control comparison and still requires one match.
+  // The provider snapshot may be English while the original 1688 controls
+  // remain Chinese, so standard color words are canonicalized to Chinese.
+  function normalizeSetVariantLabel(value) {
+    let label = normalize(value)
+      .replace(/\bgrey\b/g, "gray")
+      // This 1688 seller uses 酒红五件套 (not 酒红色五件套) for the full set.
+      .replace(/\bwine red\s*(?:five|5)\s*-?\s*(?:piece\s*)?sets?\b/g, "酒红五件套")
+      .replace(/\b(?:five|5)\s*-?\s*(?:piece\s*)?sets?\b/g, "五件套");
+    for (const [english, chinese] of [["wine red", "酒红色"], ["burgundy", "酒红色"], ["gray", "灰色"], ["black", "黑色"], ["white", "白色"], ["pink", "粉色"], ["red", "红色"], ["blue", "蓝色"], ["green", "绿色"], ["purple", "紫色"], ["yellow", "黄色"], ["brown", "棕色"], ["khaki", "卡其色"], ["beige", "米色"]]) label = label.replace(new RegExp(`\\b${english}\\b`, "g"), chinese);
+    // Chinese 1688 option labels concatenate color and set words, while the
+    // provider's translated label commonly separates them with a space.
+    return label.replace(/\s+/g, "").trim();
+  }
   function normalizeProviderItemId(value) { return String(value ?? "").trim().replace(/^abb-/i, "").replace(/^offer-/i, ""); }
   function getDirectText(element) { return [...(element?.childNodes || [])].filter((node) => node.nodeType === 3).map((node) => node.textContent || "").join(" ").replace(/\s+/g, " ").trim(); }
   function visible(element) { const style = window.getComputedStyle(element); return style.display !== "none" && style.visibility !== "hidden" && element.getClientRects().length > 0; }
   function uniqueElements(selectors) { return [...new Set(selectors.flatMap((selector) => [...document.querySelectorAll(selector)]).filter(visible))]; }
+  function openShadowRoots() { const roots = [document]; for (let index = 0; index < roots.length; index += 1) for (const element of roots[index].querySelectorAll("*")) if (element.shadowRoot) roots.push(element.shadowRoot); return roots; }
+  function orderElements(selectors) { const roots = openShadowRoots(); return [...new Set(selectors.flatMap((selector) => roots.flatMap((root) => [...root.querySelectorAll(selector)])).filter(visible))]; }
   function hasClass(element, classes) { return classes.some((name) => element.classList.contains(name) || element.closest(`.${name}`)); }
   function textFor(element) { return element.getAttribute("aria-label") || element.getAttribute("title") || element.dataset.valueName || element.dataset.name || element.textContent || ""; }
   function providerSkuIdFor(element) { return element.dataset.skuId || element.dataset.sku_id || element.dataset.sku || element.getAttribute("data-sku-id") || element.getAttribute("data-sku") || null; }
@@ -196,18 +216,19 @@
   function matrixRowsIn(block) {
     return [...new Set(SELECTORS.matrixRows.flatMap((selector) => [...block.querySelectorAll(selector)]).filter((row) => visible(row) && row.querySelector("span.item-label")))].map((row) => matrixRowCandidate(row)).filter((row) => row.normalizedLabel);
   }
-  function featureItemsForLabel(label) {
-    const expected = normalize(label);
+  function featureItemsForLabels(labels) {
+    const expected = new Set(labels.map(normalize));
     return uniqueElements(SELECTORS.featureItems).filter((item) => {
       const heading = SELECTORS.featureLabel.flatMap((selector) => [...item.querySelectorAll(selector)]).find(visible);
-      return heading && normalize(heading.innerText || heading.textContent) === expected;
+      return heading && expected.has(normalize(heading.innerText || heading.textContent));
     });
   }
+  function featureItemsForLabel(label) { return featureItemsForLabels([label]); }
   function featureColorControls(featureItem) {
     return SELECTORS.featureColorButtons.flatMap((selector) => [...featureItem.querySelectorAll(selector)]).filter(visible).map((buttonElement) => {
       const labelElement = SELECTORS.featureColorLabel.flatMap((selector) => [...buttonElement.querySelectorAll(selector)]).find(visible);
       const value = String(labelElement?.innerText || labelElement?.textContent || "").trim();
-      return { value, normalizedValue: normalize(value), buttonElement, selected: buttonElement.classList.contains("active") || isOptionSelected({ element: buttonElement, labelElement: labelElement || buttonElement, text: value }), disabled: buttonElement.disabled || buttonElement.getAttribute("aria-disabled") === "true" || hasClass(buttonElement, DISABLED_CLASSES) };
+      return { value, normalizedValue: normalizeSetVariantLabel(value), buttonElement, selected: buttonElement.classList.contains("active") || isOptionSelected({ element: buttonElement, labelElement: labelElement || buttonElement, text: value }), disabled: buttonElement.disabled || buttonElement.getAttribute("aria-disabled") === "true" || hasClass(buttonElement, DISABLED_CLASSES) };
     }).filter((control) => control.value);
   }
   function discoverFeatureColorControls() {
@@ -218,7 +239,7 @@
     return result(true, "COLOR_CONTROLS_DISCOVERED", "1688 color controls discovered.", { section: sections[0], controls });
   }
   function matchFeatureColorControl(controls, requestedValue) {
-    const matches = controls.filter((control) => control.normalizedValue === normalize(requestedValue));
+    const matches = controls.filter((control) => control.normalizedValue === normalizeSetVariantLabel(requestedValue));
     diagnostic("color-match", { requested: requestedValue, matched: matches.length === 1, currentlySelected: matches.length === 1 ? matches[0].selected : false });
     if (matches.length === 1) return result(true, "COLOR_CONTROL_MATCHED", "Exact color control matched.", { control: matches[0] });
     return result(false, matches.length ? "COLOR_CONTROL_AMBIGUOUS" : "COLOR_CONTROL_NOT_FOUND", matches.length ? `Multiple color controls match requested value: ${requestedValue}.` : `No color control matches requested value: ${requestedValue}.`);
@@ -254,6 +275,12 @@
     if (groups.length !== 1) return result(false, groups.length ? "MATRIX_GROUP_AMBIGUOUS" : "MATRIX_GROUP_NOT_FOUND", groups.length ? "Multiple size matrices were found." : "1688 size matrix was not found.");
     diagnostic("size-matrix", { rowCount: groups[0].rows.length });
     return result(true, "SIZE_MATRIX_DISCOVERED", "1688 size matrix discovered.", { group: groups[0] });
+  }
+  function featureMatrixGroup(section, label) {
+    const groups = matrixBlocksIn(section).map((element) => ({ element, rows: matrixRowsIn(element).map((row) => ({ ...row, groupElement: element })) })).filter((group) => group.rows.length > 0);
+    if (groups.length !== 1) return result(false, groups.length ? "MATRIX_GROUP_AMBIGUOUS" : "MATRIX_GROUP_NOT_FOUND", groups.length ? `Multiple ${label} matrices were found.` : `${label} matrix was not found.`);
+    diagnostic("feature-matrix", { label, rowCount: groups[0].rows.length });
+    return result(true, "FEATURE_MATRIX_DISCOVERED", "1688 feature matrix discovered.", { group: groups[0] });
   }
   function describeMatrixElement(element) {
     if (!element) return null;
@@ -394,6 +421,7 @@
   }
   function matrixRowAttribute(request, rows) {
     const attributes = matrixAttributes(request, rows);
+    diagnostic("sku-row-attribute", { requestedAttributes: request.attributes || {}, availableRows: rows.map((row) => row.label).slice(0, 40), matchedAttributes: attributes.map((attribute) => ({ key: attribute.key, value: attribute.value })) });
     return attributes.length === 1 ? result(true, "SKU_ROW_ATTRIBUTE", "Exact matrix row attribute identified.", { attribute: attributes[0] }) : result(false, attributes.length ? "SKU_ROW_AMBIGUOUS" : "SKU_ROW_NOT_FOUND", "Could not identify one exact SKU matrix row attribute.");
   }
   async function prepareMatrixRow(group, rowAttribute, request, options = {}) {
@@ -420,7 +448,30 @@
     if (!persistedAfterRediscovery) return result(false, "QUANTITY_INTERACTION_FAILED", "Quantity did not persist after row re-discovery.");
     return result(true, "SKU_MATRIX_READY", "Exact SKU matrix row prepared.", { row: refreshedRow, group, otherRowQuantities, quantityState: "QUANTITY_STATE_CONFIRMED" });
   }
+  function aliasesForAttributeKey(key) { return Object.values(ATTRIBUTE_GROUP_ALIASES).find((aliases) => aliases.map(normalize).includes(normalize(key))) || [key]; }
+  function isColorAttributeKey(key) { return aliasesForAttributeKey(key).some((alias) => ["color", "colour"].includes(normalize(alias))); }
+  async function prepareNamedFeatureItemMatrix(request, options = {}) {
+    const entries = Object.entries(request.attributes || {});
+    const colorAttribute = entries.find(([key]) => isColorAttributeKey(key));
+    const rowAttribute = entries.find(([key]) => !isColorAttributeKey(key));
+    if (!colorAttribute || !rowAttribute) return null;
+    const colorSections = featureItemsForLabels(aliasesForAttributeKey(colorAttribute[0]));
+    const rowSections = featureItemsForLabels(aliasesForAttributeKey(rowAttribute[0]));
+    if (!colorSections.length && !rowSections.length) return null;
+    if (colorSections.length !== 1 || rowSections.length !== 1) return result(false, colorSections.length > 1 || rowSections.length > 1 ? "MATRIX_GROUP_AMBIGUOUS" : "MATRIX_GROUP_NOT_FOUND", "Confirmed 1688 color and specification sections could not be uniquely identified.");
+    const selected = await selectFeatureColor(colorAttribute[1]);
+    if (!selected.ok) return selected;
+    const refreshedRowSections = featureItemsForLabels(aliasesForAttributeKey(rowAttribute[0]));
+    if (refreshedRowSections.length !== 1) return result(false, "MATRIX_GROUP_AMBIGUOUS", "The requested specification section changed while selecting color.");
+    const matrix = featureMatrixGroup(refreshedRowSections[0], rowAttribute[0]);
+    if (!matrix.ok) return matrix;
+    const exactRow = matrixRowAttribute(request, matrix.group.rows);
+    if (!exactRow.ok) return exactRow;
+    return prepareMatrixRow(matrix.group, exactRow.attribute, request, options);
+  }
   async function prepareFeatureItemMatrix(request, options = {}) {
+    const generalized = await prepareNamedFeatureItemMatrix(request, options);
+    if (generalized) return generalized;
     const colorSections = featureItemsForLabel("颜色");
     const sizeSections = featureItemsForLabel("尺码");
     if (!colorSections.length && !sizeSections.length) return null;
@@ -480,7 +531,10 @@
       prepared.push({ request, row: outcome.row });
     }
     for (const entry of prepared) {
-      const verified = verifySkuMatrixRow(entry.row, entry.request.quantity);
+      // Feature-item matrices show one color at a time. Reopen each requested
+      // color and reapply its exact row quantity to prove it persisted before
+      // adding the product to cart once.
+      const verified = await prepareSkuMatrix(entry.request, { allowExistingRows: true });
       if (!verified.ok) return verified;
       entry.row = verified.row;
       if (entry.row.disabled || (entry.row.stock !== null && entry.row.stock < entry.request.quantity) || entry.row.price === null) return result(false, "SKU_ROW_UNAVAILABLE", `SKU row is unavailable or cannot satisfy its quantity: ${entry.row.label}.`);
@@ -687,11 +741,13 @@
     }
     return null;
   }
-  function orderIdFromUrl() { try { const url = new URL(window.location.href); return url.searchParams.get("orderId") || url.searchParams.get("tradeId") || url.pathname.match(/(?:order|trade)[^0-9]*(\d{6,})/i)?.[1] || null; } catch { return null; } }
+  function orderIdFromUrl() { try { const url = new URL(window.location.href); return url.searchParams.get("orderId") || url.searchParams.get("tradeId") || url.searchParams.get("order_id") || url.searchParams.get("trade_id") || url.searchParams.get("orderNo") || url.searchParams.get("order_no") || url.pathname.match(/(?:order|trade)[^0-9]*(\d{6,})/i)?.[1] || null; } catch { return null; } }
+  function orderIdFromDocument() { const ids = openShadowRoots().flatMap((root) => [...root.querySelectorAll("*")]).map((element) => String(element?.innerText || element?.textContent || "").match(/订单号\s*[:：]?\s*(\d{8,})/i)?.[1]).filter(Boolean); const uniqueIds = [...new Set(ids)]; return uniqueIds.length === 1 ? uniqueIds[0] : null; }
   function detectPostPurchasePage() {
-    const roots = uniqueElements(SELECTORS.orderRoots);
-    const providerOrderId = roots.map((root) => datasetValue(root, "orderId", "tradeId")).find(Boolean) || orderIdFromUrl();
-    const pageType = /success|pay/i.test(window.location.href) ? "ORDER_SUCCESS" : roots.length ? "ORDER_DETAIL" : null;
+    const roots = orderElements(SELECTORS.orderRoots);
+    const isBuyerOrderList = /\/trade-order-list\/buyer-order-list\.html/i.test(window.location.href), isBuyerOrderDetail = /\/trade-order-detail\/index\.html/i.test(window.location.href);
+    const providerOrderId = roots.map((root) => datasetValue(root, "orderId", "tradeId")).find(Boolean) || orderIdFromUrl() || (isBuyerOrderList ? orderIdFromDocument() : null);
+    const pageType = /success|pay/i.test(window.location.href) ? "ORDER_SUCCESS" : isBuyerOrderList ? "ORDER_DRAFT_LIST" : isBuyerOrderDetail ? "ORDER_DETAIL" : /draft|confirm/i.test(window.location.href) ? "ORDER_DRAFT" : roots.length ? "ORDER_DETAIL" : null;
     diagnostic("detect-order-page", { supported: Boolean(providerOrderId && pageType), pageType, rootCount: roots.length });
     return providerOrderId && pageType ? result(true, "ORDER_PAGE_DETECTED", "Supported 1688 order page detected.", { pageType, providerOrderId }) : result(false, "ORDER_NOT_DETECTED", "Open a supported 1688 order detail or order-success page before capturing.");
   }
@@ -704,17 +760,67 @@
     return { providerOrderId, providerItemId, providerSkuId: datasetValue(element, "skuId", "specId", "providerSkuId"), attributes, quantity,
       actualUnitPriceCny: capturedMoney(element, ["unitPrice", "actualUnitPrice"], ["单价", "unit price"]), productSubtotalCny: capturedMoney(element, ["subtotal", "productSubtotal"], ["商品小计", "小计", "subtotal"]), domesticFreightCny: capturedMoney(element, ["freight", "domesticFreight"], ["运费", "freight"]), actualDiscountCny: capturedMoney(element, ["discount"], ["优惠", "discount"]), paidAmountCny: capturedMoney(element, ["paidAmount", "finalPaid"], ["实付", "付款", "paid"]), sellerName: datasetValue(element, "sellerName") || labelledValue(element, ["卖家", "seller"]), sellerId: datasetValue(element, "sellerId"), providerStatus: datasetValue(element, "providerStatus", "status") || labelledValue(element, ["订单状态", "status"]), sellerTrackingNumber: datasetValue(element, "trackingNumber", "sellerTrackingNumber") || labelledValue(element, ["物流单号", "运单号", "tracking"]), purchasedAt: datasetValue(element, "purchasedAt", "paymentTime") || null };
   }
+  function nearestModernOrderText(element) { let current = element; for (let depth = 0; current && depth < 6; depth += 1, current = current.parentElement) { const text = String(current.innerText || current.textContent || "").replace(/\s+/g, " ").trim(); if (/颜色\s*[:：]|尺码\s*[:：]|规格\s*[:：]/.test(text)) return text; } return String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim(); }
+  function modernOrderAttributes(text) { const attributes = {}; for (const match of text.matchAll(/(颜色|尺码|规格)\s*[:：]\s*(.*?)(?=\s*(?:颜色|尺码|规格|货号)\s*[:：]|$)/g)) { const value = match[2].replace(/\s*(?:删除|查看采购车|还剩余货品).*$/g, "").trim(); if (value) attributes[match[1]] = value; } return attributes; }
+  function summaryMoney(text, label) { const match = text.match(new RegExp(`${label}[^¥￥\\d]{0,12}[¥￥]?\\s*(\\d+(?:\\.\\d{1,2})?)`, "i")); return match ? Number(match[1]) : null; }
+  function captureModernOrderLines(providerOrderId) {
+    const summary = orderElements(SELECTORS.modernOrderTotals).map((element) => String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim()).find(Boolean) || "";
+    const domesticFreightCny = summaryMoney(summary, "运费"), actualDiscountCny = summaryMoney(summary, "(?:商品优惠|共优惠)"), paidAmountCny = summaryMoney(summary, "(?:待付款|实付|付款)");
+    return orderElements(SELECTORS.modernOrderTitles).map((title) => {
+      const text = String(title.innerText || title.textContent || "").replace(/\s+/g, " ").trim(), context = nearestModernOrderText(title), priceMatch = text.match(/[¥￥]\s*(\d+(?:\.\d{1,2})?)/), quantityMatch = text.match(/[x×]\s*(\d+)/i), link = [...title.querySelectorAll("a[href]")].find((candidate) => /\/offer\/\d+\.html/i.test(candidate.href));
+      const actualUnitPriceCny = priceMatch ? Number(priceMatch[1]) : null, quantity = quantityMatch ? Number(quantityMatch[1]) : null;
+      return { providerOrderId, providerItemId: link?.href?.match(/\/offer\/(\d+)\.html/i)?.[1] || null, providerSkuId: null, attributes: modernOrderAttributes(context), quantity, actualUnitPriceCny, productSubtotalCny: actualUnitPriceCny !== null && quantity !== null ? actualUnitPriceCny * quantity : null, domesticFreightCny, actualDiscountCny, paidAmountCny, sellerName: null, sellerId: null, providerStatus: null, sellerTrackingNumber: null, purchasedAt: null };
+    });
+  }
+  function legacyOrderRows() {
+    const candidates = openShadowRoots().flatMap((root) => [...root.querySelectorAll("div,li,tr")]).filter((element) => {
+      const text = String(element.innerText || element.textContent || "");
+      return /颜色\s*[:：]/.test(text) && /尺码\s*[:：]/.test(text) && /货号\s*[:：]/.test(text);
+    });
+    const rows = candidates.map((candidate) => {
+      let current = candidate;
+      for (let depth = 0; current && depth < 6; depth += 1, current = current.parentElement) {
+        const text = String(current.innerText || current.textContent || "").replace(/\s+/g, " ").trim();
+        if (/优惠后\s*\d+(?:\.\d{1,2})?\s*元/.test(text) && /颜色\s*[:：]/.test(text)) return current;
+      }
+      return candidate;
+    });
+    return [...new Set(rows)].filter((row) => !rows.some((other) => other !== row && row.contains(other)));
+  }
+  function exactColumnQuantity(row) { const values = [...row.querySelectorAll("div,span,td")].map((element) => String(element.innerText || element.textContent || "").trim()).filter((text) => /^\d+$/.test(text)).map(Number).filter((value) => value > 0); return values.length === 1 ? values[0] : null; }
+  function captureLegacyOrderLines(providerOrderId) {
+    const summary = orderElements(SELECTORS.modernOrderTotals).map((element) => String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim()).find(Boolean) || "";
+    const domesticFreightCny = summaryMoney(summary, "运费"), actualDiscountCny = summaryMoney(summary, "(?:商品优惠|共优惠)"), paidAmountCny = summaryMoney(summary, "(?:待付款|实付|付款)");
+    const rows = legacyOrderRows(), priceCells = orderElements([".order-table-pay"]), quantityCells = orderElements([".order-table-number"]);
+    return rows.map((row, index) => {
+      const text = String(row.innerText || row.textContent || "").replace(/\s+/g, " ").trim(), priceText = String(priceCells[index]?.innerText || priceCells[index]?.textContent || ""), priceMatches = [...priceText.matchAll(/(\d+(?:\.\d{1,2})?)\s*元/g)], links = [...row.querySelectorAll("a[href]")], productLink = links.find((link) => /\/offer\/\d+\.html/i.test(link.href));
+      const actualUnitPriceCny = priceMatches.length ? Number(priceMatches[0][1]) : null, quantity = /^\d+$/.test(String(quantityCells[index]?.innerText || quantityCells[index]?.textContent || "").trim()) ? Number(String(quantityCells[index].innerText || quantityCells[index].textContent).trim()) : null;
+      return { providerOrderId, providerItemId: productLink?.href?.match(/\/offer\/(\d+)\.html/i)?.[1] || null, providerSkuId: null, attributes: modernOrderAttributes(text), quantity, actualUnitPriceCny, productSubtotalCny: actualUnitPriceCny !== null && quantity !== null ? actualUnitPriceCny * quantity : null, domesticFreightCny, actualDiscountCny, paidAmountCny, sellerName: null, sellerId: null, providerStatus: null, sellerTrackingNumber: null, purchasedAt: null };
+    });
+  }
+  function legacyOrderDiagnostics() { const rows = legacyOrderRows(), cells = openShadowRoots().flatMap((root) => [...root.querySelectorAll("div,span,td")]); const describe = (element) => ({ tag: element.tagName, className: String(element.className || ""), text: String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim() }); diagnostic("legacy-order-row-discovery", { rowCount: rows.length, rows: rows.slice(0, 12).map((row) => ({ ...describe(row), exactNumberColumns: [...row.querySelectorAll("div,span,td")].map((element) => String(element.innerText || element.textContent || "").trim()).filter((text) => /^\d+$/.test(text)), offerLinks: [...row.querySelectorAll("a[href]")].map((link) => link.href).filter((href) => /\/offer\/\d+\.html/i.test(href)).slice(0, 3) })), priceColumns: cells.filter((element) => /^优惠后\s*\d+(?:\.\d{1,2})?\s*元/.test(String(element.innerText || element.textContent || "").trim())).slice(0, 30).map(describe), quantityColumns: cells.filter((element) => /^\d+$/.test(String(element.innerText || element.textContent || "").trim())).slice(0, 80).map(describe) }); }
+  function orderLineDiagnostics() {
+    const roots = openShadowRoots();
+    const selectorCounts = Object.fromEntries(SELECTORS.orderLines.map((selector) => [selector, roots.reduce((count, root) => count + root.querySelectorAll(selector).length, 0)]));
+    const candidates = roots.flatMap((root) => [...root.querySelectorAll("a,div,li,section,article")])
+      .map((element) => ({ element, text: String(element.innerText || element.textContent || "").replace(/\s+/g, " ").trim() }))
+      .filter(({ text }) => /[¥￥]/.test(text) && text.length >= 8 && text.length <= 1200)
+      .slice(0, 20)
+      .map(({ element, text }) => ({ tag: element.tagName, className: String(element.className || ""), dataAttributes: Object.fromEntries([...element.attributes].filter((attribute) => attribute.name.startsWith("data-")).map((attribute) => [attribute.name, attribute.value])), text, links: [...element.querySelectorAll("a[href]")].slice(0, 4).map((link) => link.href) }));
+    diagnostic("order-line-discovery", { selectorCounts, candidates, shadowRootCount: roots.length, inTopFrame: window.top === window });
+  }
   function captureProviderOrder() {
     const page = detectPostPurchasePage(); if (!page.ok) return page;
-    const lines = uniqueElements(SELECTORS.orderLines).map((element) => captureOrderLine(element, page.providerOrderId)).filter((line) => line.providerItemId || line.providerSkuId || line.quantity !== null);
-    if (!lines.length) return result(false, "ORDER_NOT_DETECTED", "1688 order lines could not be identified on this supported page.", { pageType: page.pageType });
+    const classicLines = orderElements(SELECTORS.orderLines).map((element) => captureOrderLine(element, page.providerOrderId)).filter((line) => line.providerItemId || line.providerSkuId || line.quantity !== null), modernLines = captureModernOrderLines(page.providerOrderId).filter((line) => line.providerItemId || line.providerSkuId || line.quantity !== null), legacyLines = captureLegacyOrderLines(page.providerOrderId).filter((line) => line.providerItemId || line.providerSkuId || line.quantity !== null), lines = classicLines.length ? classicLines : modernLines.length ? modernLines : legacyLines;
+    if (!lines.length) { orderLineDiagnostics(); legacyOrderDiagnostics(); return result(false, "ORDER_NOT_DETECTED", "1688 order lines could not be identified on this supported page.", { pageType: page.pageType }); }
     const snapshot = { providerOrderId: page.providerOrderId, pageType: page.pageType, lines: lines.map(({ providerOrderId, providerItemId, providerSkuId, attributes, quantity, actualUnitPriceCny, productSubtotalCny, domesticFreightCny, actualDiscountCny, paidAmountCny, sellerName, sellerId, providerStatus, sellerTrackingNumber, purchasedAt }) => ({ providerOrderId, providerItemId, providerSkuId, attributes, quantity, actualUnitPriceCny, productSubtotalCny, domesticFreightCny, actualDiscountCny, paidAmountCny, sellerName, sellerId, providerStatus, sellerTrackingNumber, purchasedAt })) };
     diagnostic("capture-provider-order", { pageType: page.pageType, lineCount: lines.length, providerOrderId: page.providerOrderId });
     return result(true, "CAPTURED", "1688 order captured for review.", { capture: snapshot });
   }
+  function captureProviderTracking() { const page = detectPostPurchasePage(); if (!page.ok) return page; const text = openShadowRoots().flatMap((root) => [...root.querySelectorAll("*")]).map((element) => String(element.innerText || element.textContent || "")).join(" "); const trackingNumbers = [...text.matchAll(/(?:\u5feb\u9012\u5355\u53f7|\u8fd0\u5355\u53f7|\u7269\u6d41\u5355\u53f7|tracking\s*(?:number|no\.?))\s*[:\uff1a#-]?\s*([A-Za-z0-9-]{6,64})/gi)].map((match) => match[1]).filter((value, index, values) => values.indexOf(value) === index); diagnostic("capture-provider-tracking", { providerOrderId: page.providerOrderId, trackingNumbers }); return result(true, "TRACKING_CAPTURED", trackingNumbers.length ? "Seller tracking numbers found." : "No seller tracking number is available on this order yet.", { capture: { providerOrderId: page.providerOrderId, trackingNumbers, pageType: page.pageType, capturedAt: new Date().toISOString() } }); }
   function attributesMatch(left = {}, right = {}) { const leftEntries = Object.entries(left); return leftEntries.length > 0 && leftEntries.length === Object.entries(right).length && leftEntries.every(([key, value]) => normalize(right[key]) === normalize(value)); }
   function matchCapturedLine(line, queueItems) {
-    const sameOffer = queueItems.filter((item) => sameProviderItem(item.providerItemId, line.providerItemId));
+    const sameOffer = line.providerItemId ? queueItems.filter((item) => sameProviderItem(item.providerItemId, line.providerItemId)) : queueItems;
     if (!sameOffer.length) return { state: "ITEM_NOT_MATCHED", line };
     const sku = line.providerSkuId ? sameOffer.filter((item) => normalize(item.providerSkuId) === normalize(line.providerSkuId)) : [];
     const variants = !sku.length ? sameOffer.filter((item) => attributesMatch(item.attributes, line.attributes)) : sku;
@@ -722,5 +828,5 @@
     if (variants.length > 1) return { state: "AMBIGUOUS_MATCH", line, candidates: variants.map((item) => item.orderItemId) };
     return { state: line.providerSkuId ? "SKU_MISMATCH" : "ITEM_NOT_MATCHED", line };
   }
-  globalThis.BridgeCart1688 = { diagnostic, optionTextFor: textFor, isOptionSelected, normalizeVariantText: normalize, normalizeProviderItemId, sameProviderItem, detectProductPage, getProviderItemId, waitForProductUI, discoverVariantGroups, discoverVariantOptions, detectInteractionMode, discoverFeatureColorControls, matchFeatureColorControl, selectFeatureColor, sizeMatrixGroup, discoverMatrixGroups, discoverMatrixColorControls, discoverSkuMatrix, matchMatrixGroup, matchMatrixColorControl, matrixRowCandidate, setMatrixRowQuantity, prepareSkuMatrix, prepareSkuMatrixBatch, verifySkuMatrixRow, parseStock, isTranslatedDocument, detectTranslation, mapAttributeToGroup, findSku, selectSku, setQuantity, parsePrice, readCurrentUnitPrice, safeCartButton, cartCountFromText, getCartState, hasExplicitCartSuccessToast, waitForCartConfirmation, addToCart, detectPostPurchasePage, captureProviderOrder, matchCapturedLine };
+  globalThis.BridgeCart1688 = { diagnostic, optionTextFor: textFor, isOptionSelected, normalizeVariantText: normalize, normalizeProviderItemId, sameProviderItem, detectProductPage, getProviderItemId, waitForProductUI, discoverVariantGroups, discoverVariantOptions, detectInteractionMode, discoverFeatureColorControls, matchFeatureColorControl, selectFeatureColor, sizeMatrixGroup, discoverMatrixGroups, discoverMatrixColorControls, discoverSkuMatrix, matchMatrixGroup, matchMatrixColorControl, matrixRowCandidate, setMatrixRowQuantity, prepareSkuMatrix, prepareSkuMatrixBatch, verifySkuMatrixRow, parseStock, isTranslatedDocument, detectTranslation, mapAttributeToGroup, findSku, selectSku, setQuantity, parsePrice, readCurrentUnitPrice, safeCartButton, cartCountFromText, getCartState, hasExplicitCartSuccessToast, waitForCartConfirmation, addToCart, detectPostPurchasePage, captureProviderOrder, captureProviderTracking, matchCapturedLine };
 })();

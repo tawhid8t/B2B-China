@@ -50,26 +50,41 @@ const purchaseTaskSelect = `id,state,cart_added_at,cart_added_by,last_error,crea
     product:product_links(title,original_url,provider,provider_item_id,images),
     client:clients(business_name),
     order_items(id,status,quantity,cny_price,domestic_delivery_cny,estimated_total_bdt,
-      sku:product_skus(label,attributes,provider_sku_id,image_url)))`;
+    display_attributes_snapshot,provider_attributes_snapshot,
+    sku:product_skus(label,attributes,provider_attributes,provider_sku_id,image_url)))`;
 
 export async function loadAdminPurchaseTasks(context: AuthorizationContext) {
   assertAuthorizedRole(context, ADMIN_ROLES);
   const { data, error } = await context.supabase
     .from("purchase_tasks")
     .select(purchaseTaskSelect)
-    .in("state", ["queued", "cart_added", "awaiting_provider_details", "awaiting_admin_confirmation", "needs_review"])
+    .in("state", ["queued", "cart_added", "awaiting_provider_details", "awaiting_admin_confirmation", "needs_review", "confirmed"])
     .order("updated_at", { ascending: false })
     .limit(100);
   if (error) throw error;
+  const taskIds = (data ?? []).map((task: any) => task.id);
+  const { data: captures, error: capturesError } = taskIds.length
+    ? await context.supabase
+      .from("provider_purchase_captures")
+      .select("id,purchase_task_id,provider_order_id,seller_name,purchased_at,domestic_delivery_cny,discount_cny,final_paid_cny,created_at,provider_purchase_capture_lines(order_item_id,provider_sku_id,quantity,actual_unit_price_cny,actual_subtotal_cny)")
+      .in("purchase_task_id", taskIds)
+      .order("created_at", { ascending: false })
+    : { data: [], error: null };
+  if (capturesError) throw capturesError;
+  const captureByTaskId = new Map<string, any>();
+  for (const capture of captures ?? []) if (!captureByTaskId.has(capture.purchase_task_id)) captureByTaskId.set(capture.purchase_task_id, capture);
   return (data ?? [])
     .filter((task: any) => (task.product_order?.order_items ?? []).length > 0)
     .map((task: any) => {
       const lines = task.product_order.order_items;
       return {
         ...task,
-        hasMixedSkuStatuses: !lines.every(
-          (line: any) => line.status === "queued_for_purchase",
-        ),
+        providerCapture: captureByTaskId.has(task.id) ? { ...captureByTaskId.get(task.id), taskState: task.state } : null,
+        // SKU queue integrity matters only before the provider cost is
+        // approved. Once every SKU moves together to Purchased, those
+        // statuses are expected and must never be shown as a repair error.
+        hasMixedSkuStatuses: ["queued", "cart_added", "awaiting_provider_details", "awaiting_admin_confirmation", "needs_review"].includes(task.state)
+          && !lines.every((line: any) => line.status === "queued_for_purchase"),
       };
     });
 }
@@ -174,13 +189,18 @@ export async function loadPurchasedOrders(context: AuthorizationContext) {
     .from("provider_orders")
     .select(
       `
-    id,provider,provider_order_id,provider_sku_id,quantity_purchased,paid_amount_cny,actual_unit_price_cny,
+    id,provider,provider_order_id,provider_sku_id,quantity_purchased,paid_amount_cny,actual_unit_price_cny,actual_product_subtotal_cny,actual_discount_cny,
     actual_domestic_delivery_cny,seller_tracking_number,provider_status,synced_at,
-    order_item:order_items(id,quantity,cny_price,domestic_delivery_cny,estimated_total_bdt,product:product_links(title,images),client:clients(business_name))
+    order_item:order_items(id,product_order_id,quantity,cny_price,domestic_delivery_cny,estimated_total_bdt,sku:product_skus(label,image_url,attributes),product:product_links(id,title,images),client:clients(business_name))
   `,
     )
     .order("synced_at", { ascending: false })
     .limit(100);
   if (error) throw error;
-  return data ?? [];
+  const providerOrderIds = [...new Set((data ?? []).map((row: any) => row.provider_order_id).filter(Boolean))];
+  const { data: tracking, error: trackingError } = providerOrderIds.length ? await context.supabase.from("provider_tracking_captures").select("provider_order_id,tracking_number,captured_at").eq("provider", "alibaba1688").in("provider_order_id", providerOrderIds).order("captured_at", { ascending: false }) : { data: [], error: null };
+  if (trackingError) throw trackingError;
+  const trackingByOrder = new Map<string, string[]>();
+  for (const record of tracking ?? []) trackingByOrder.set(record.provider_order_id, [...(trackingByOrder.get(record.provider_order_id) ?? []), record.tracking_number]);
+  return (data ?? []).map((row: any) => ({ ...row, trackingNumbers: trackingByOrder.get(row.provider_order_id) ?? [] }));
 }

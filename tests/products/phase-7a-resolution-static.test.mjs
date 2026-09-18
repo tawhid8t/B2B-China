@@ -9,7 +9,8 @@ const migration = read("supabase/migrations/20260903162307_optimize_product_snap
 
 test("resolve-link exposes retryable provider failures separately from manual review", () => {
   assert.match(route, /error\.kind === "lookup_failed"\) return apiError\("PROVIDER_LOOKUP_FAILED"/);
-  assert.match(route, /apiSuccess\(data, resolutionMeta\)/);
+  assert.match(route, /providerAttributes: _providerAttributes/);
+  assert.match(route, /apiSuccess\(\{ \.\.\.data, skus:/);
 });
 
 test("product and SKU persistence uses one restricted atomic RPC", () => {

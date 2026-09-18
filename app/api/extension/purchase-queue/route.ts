@@ -19,6 +19,7 @@ type PurchaseQueueRow = {
   provider_sku_id: string | null;
   sku_label: string;
   attributes: Record<string, unknown>;
+  display_attributes: Record<string, unknown>;
   quantity: number;
   expected_unit_price_cny: number | string;
   expected_domestic_delivery_cny: number | string | null;
@@ -57,6 +58,7 @@ export async function GET(request: Request) {
         providerSkuId: item.provider_sku_id,
         skuLabel: item.sku_label,
         attributes: item.attributes,
+        displayAttributes: item.display_attributes,
         quantity: item.quantity,
         expectedUnitPriceCny: Number(item.expected_unit_price_cny),
         expectedDomesticDeliveryCny: item.expected_domestic_delivery_cny === null ? null : Number(item.expected_domestic_delivery_cny),

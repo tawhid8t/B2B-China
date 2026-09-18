@@ -1,24 +1,9 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BridgeCart Purchase Assistant</title>
-    <style>body{width:390px;margin:0;font:14px/1.4 Arial,sans-serif;color:#172026;background:#f7f4ef}main{padding:16px}h1{margin:0;font-size:20px}button{border:0;border-radius:6px;background:#187064;color:#fff;padding:9px 11px;font-weight:700;cursor:pointer}button.secondary{background:#e8e2d8;color:#172026}input{box-sizing:border-box;width:100%;margin:8px 0;padding:9px;border:1px solid #cfc7b9;border-radius:6px}#queue{display:grid;gap:10px;margin-top:12px}.item{display:grid;grid-template-columns:58px 1fr;gap:10px;padding:10px;border:1px solid #ded8cc;border-radius:8px;background:#fff}.image{width:58px;height:58px;object-fit:cover;border-radius:5px;background:#eee8dd}.meta{color:#64706f;font-size:12px;white-space:pre-wrap}.status{display:inline-block;margin-top:5px;padding:2px 6px;border-radius:999px;background:#e8e2d8;font-size:11px;font-weight:700;text-transform:uppercase}.needs-review{background:#ffe5b0}.failed{background:#ffd9d4}.cart-added{background:#ccebdd}.notice{margin:10px 0 0;padding:9px;border-radius:6px;background:#fff;border:1px solid #ded8cc;white-space:pre-wrap}.actions{display:flex;gap:8px;margin-top:8px}.actions button{flex:1}</style>
-  </head>
-  <body>
-    <main>
-      <h1>Purchase queue</h1>
-      <p id="connectionState" class="meta">Not connected</p>
-      <input id="credential" type="password" autocomplete="off" placeholder="Paste extension credential" />
-      <div class="actions"><button id="connect">Connect</button><button id="disconnect" class="secondary">Disconnect</button></div>
-      <div class="actions"><button id="refresh" class="secondary">Refresh queue</button></div>
-      <div class="actions"><button id="captureOrder" class="secondary">Capture 1688 Order</button></div>
-      <p id="notice" class="notice">Connect an admin-issued extension credential.</p>
-      <section id="capture" aria-live="polite"></section>
-      <section id="queue" aria-live="polite"></section>
-    </main>
-    <script src="api.js"></script>
-    <script src="popup.js"></script>
-  </body>
-</html>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>BridgeCart Purchase Assistant</title><style>
+body{width:430px;margin:0;font:14px/1.4 Arial,sans-serif;color:#172026;background:#f7f4ef}main{padding:16px}h1,h2,p{margin:0}.eyebrow{color:#63706d;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.meta{color:#64706f;font-size:12px;white-space:pre-wrap}.header{display:flex;align-items:start;justify-content:space-between;gap:12px}.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:14px 0;padding:10px;border:1px solid #ded8cc;border-radius:8px;background:#fff}.flow span{font-size:10px;font-weight:700;text-align:center;color:#64706f}.flow span:first-child{color:#187064}button{border:0;border-radius:6px;background:#187064;color:#fff;padding:9px 11px;font-weight:700;cursor:pointer}button.secondary{background:#e8e2d8;color:#172026}button:disabled{cursor:not-allowed;opacity:.55}input{box-sizing:border-box;width:100%;margin:8px 0;padding:9px;border:1px solid #cfc7b9;border-radius:6px}.actions{display:flex;gap:8px;margin-top:8px}.actions button{flex:1}.notice{margin:10px 0 0;padding:9px;border-radius:6px;background:#fff;border:1px solid #ded8cc;white-space:pre-wrap}.tabs{display:flex;gap:5px;margin-top:14px}.tab{flex:1;background:#e8e2d8;color:#172026;font-size:10px;padding:8px 4px}.tab.active{background:#187064;color:#fff}.queue-section{margin-top:13px}.section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}.count{border-radius:999px;background:#e8e2d8;padding:2px 7px;font-size:11px;font-weight:700}.item-list{display:grid;gap:9px}.item{display:grid;grid-template-columns:58px 1fr;gap:10px;padding:10px;border:1px solid #ded8cc;border-radius:8px;background:#fff}.image{width:58px;height:58px;object-fit:cover;border-radius:5px;background:#eee8dd}.meta strong{color:#172026}.status{display:inline-block;margin-top:5px;padding:2px 6px;border-radius:999px;background:#e8e2d8;font-size:11px;font-weight:700;text-transform:uppercase}.needs-review,.failed{background:#ffd9d4}.opened,.waiting-for-page,.selecting-variants,.adding-to-cart{background:#dcecff}.cart-added{background:#ccebdd}.captured{background:#e2d7ff;color:#4a357d}.empty{padding:10px;border:1px dashed #cfc7b9;border-radius:8px;color:#64706f;font-size:12px;background:#fff}
+</style></head><body><main>
+<header class="header"><div><p class="eyebrow">Private admin tool</p><h1>1688 cart assistant</h1></div><p id="connectionState" class="meta">Not connected</p></header>
+<div class="flow"><span>1. Verify all SKUs</span><span>2. Add once</span><span>3. Review provider details</span></div>
+<input id="credential" type="password" autocomplete="off" placeholder="Paste extension credential" /><div class="actions"><button id="connect">Connect</button><button id="disconnect" class="secondary">Disconnect</button></div><div class="actions"><button id="refresh" class="secondary">Refresh queue</button><button id="captureOrder" class="secondary">Capture 1688 Order</button></div><div class="actions"><button id="captureTracking" class="secondary">Refresh seller tracking</button></div>
+<p id="notice" class="notice">Connect an admin-issued extension credential.</p><section id="capture" aria-live="polite"></section><nav class="tabs" aria-label="Purchase queue"><button class="tab active" id="readyTab" type="button">Ready <span id="readyCount">0</span></button><button class="tab" id="reviewTab" type="button">Needs review <span id="reviewCount">0</span></button><button class="tab" id="addedTab" type="button">Cart added <span id="addedCount">0</span></button><button class="tab" id="capturedTab" type="button">Captured <span id="capturedCount">0</span></button></nav><section id="queue" aria-live="polite"></section>
+</main><script src="api.js"></script><script src="popup.js"></script></body></html>

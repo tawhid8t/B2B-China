@@ -9,3 +9,6 @@ tsconfig.tsbuildinfo
 playwright-report
 
 .mcp.json
+
+# Local operational script with instance-specific order/profile IDs.
+supabase/record-verified-cart-results.sql

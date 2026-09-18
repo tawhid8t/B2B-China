@@ -29,8 +29,10 @@ export async function POST(request: Request) {
       { actorId: authorization.context.user.id, url: canonicalUrl },
       { repository, resolveProvider: resolveProductFromProvider }
     );
-    const { resolutionMeta, ...data } = product;
-    return apiSuccess(data, resolutionMeta);
+    const { resolutionMeta, skus, ...data } = product;
+    // Supplier-original attributes are retained server-side for the purchase
+    // extension. The client receives only its translated display selection.
+    return apiSuccess({ ...data, skus: skus.map(({ providerAttributes: _providerAttributes, ...sku }) => sku) }, resolutionMeta);
   } catch (error) {
     if (error instanceof ProductProviderError) {
       if (error.kind === "invalid_link") return apiError("VALIDATION_ERROR", error.message, 400, error.details);

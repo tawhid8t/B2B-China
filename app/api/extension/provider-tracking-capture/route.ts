@@ -1,0 +1,9 @@
+import { apiError, apiSuccess } from "@/lib/api/response";
+import { databaseErrorResponse } from "@/lib/api/database-error";
+import { authorizeExtensionApiRequest } from "@/lib/auth/extension-api";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { extensionCorsPreflight, extensionCorsResponse } from "@/lib/api/extension-cors";
+import { z } from "zod";
+const schema=z.object({providerOrderId:z.string().trim().min(1),trackingNumbers:z.array(z.string().trim().regex(/^[A-Za-z0-9-]{6,64}$/)).min(1).max(20),rawCapture:z.record(z.unknown()).optional()});
+export async function POST(request:Request){const auth=await authorizeExtensionApiRequest(request);if(!auth.authorized)return extensionCorsResponse(request,auth.response);const parsed=schema.safeParse(await request.json().catch(()=>null));if(!parsed.success)return extensionCorsResponse(request,apiError("VALIDATION_ERROR","Invalid tracking capture payload.",400));const rpc=auth.kind==="credential"?"record_provider_tracking_capture_for_credential":"record_provider_tracking_capture",client=auth.kind==="credential"?createSupabaseAdminClient():auth.context.supabase,args=auth.kind==="credential"?{p_profile_id:auth.context.profileId,p_provider_order_id:parsed.data.providerOrderId,p_tracking_numbers:parsed.data.trackingNumbers,p_raw_capture:parsed.data.rawCapture??{}}:{p_provider_order_id:parsed.data.providerOrderId,p_tracking_numbers:parsed.data.trackingNumbers,p_raw_capture:parsed.data.rawCapture??{}};const {data,error}=await client.rpc(rpc,args);if(error)return extensionCorsResponse(request,databaseErrorResponse(error,"CONFLICT","Tracking numbers could not be saved."));return extensionCorsResponse(request,apiSuccess({providerOrderId:parsed.data.providerOrderId,tracking:data??[]}));}
+export function OPTIONS(request:Request){return extensionCorsPreflight(request);}

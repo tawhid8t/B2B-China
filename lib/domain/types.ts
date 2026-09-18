@@ -21,6 +21,8 @@ export type ProductSku = {
   providerSkuId?: string;
   label: string;
   attributes: Record<string, string>;
+  /** Original supplier labels/values. Never render these in the client UI. */
+  providerAttributes?: Record<string, string>;
   priceCny: number;
   availableQuantity?: number;
   imageUrl?: string;

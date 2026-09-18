@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ReactNode } from "react";
-import { Bell, Boxes, ClipboardList, CreditCard, Home, PackageCheck, ShoppingCart, TriangleAlert, UsersRound, WalletCards } from "lucide-react";
+import { Bell, Boxes, ClipboardList, CreditCard, Home, PackageCheck, ShoppingCart, TriangleAlert, Truck, UsersRound, WalletCards } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 
 const nav = [
@@ -10,6 +10,7 @@ const nav = [
   { href: "/admin/purchasing", label: "Purchase queue", icon: ShoppingCart },
   { href: "/admin/purchasing/purchased", label: "Purchased", icon: PackageCheck },
   { href: "/admin/purchasing/exceptions", label: "Exceptions", icon: TriangleAlert },
+  { href: "/staff/receiving", label: "Receiving", icon: Truck },
   { href: "/admin/extension", label: "Extension", icon: ClipboardList },
   { href: "/admin/clients", label: "Clients", icon: UsersRound },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },

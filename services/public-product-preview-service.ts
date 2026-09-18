@@ -1,7 +1,9 @@
 import { identifyProductSource, ProductProviderError, resolveProductFromProvider } from "./product-provider-service.ts";
 import type { ResolvedProduct } from "../lib/domain/types.ts";
 
-export type PublicProductPreview = Omit<ResolvedProduct, "raw" | "source">;
+export type PublicProductPreview = Omit<ResolvedProduct, "raw" | "source" | "skus"> & {
+  skus: Array<Omit<ResolvedProduct["skus"][number], "providerAttributes">>;
+};
 
 type PreviewCacheEntry = {
   expiresAt: number;
@@ -64,8 +66,11 @@ export function createPreviewRateLimiter({ limit = 20, windowMs = 60 * 1000, max
 export const publicPreviewRateLimiter = createPreviewRateLimiter();
 
 export function toPublicProductPreview(product: ResolvedProduct): PublicProductPreview {
-  const { raw: _raw, source: _source, ...publicProduct } = product;
-  return publicProduct;
+  const { raw: _raw, source: _source, skus, ...publicProduct } = product;
+  return {
+    ...publicProduct,
+    skus: skus.map(({ providerAttributes: _providerAttributes, ...sku }) => sku)
+  };
 }
 
 export function isProductProviderError(error: unknown): error is ProductProviderError {

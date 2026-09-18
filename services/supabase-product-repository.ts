@@ -35,6 +35,7 @@ export function createSupabaseProductRepository(supabase: SupabaseClient): Produ
           providerSkuId: sku.providerSkuId ?? sku.id,
           label: sku.label,
           attributes: sku.attributes,
+          providerAttributes: sku.providerAttributes ?? sku.attributes,
           priceCny: sku.priceCny,
           availableQuantity: sku.availableQuantity ?? null,
           imageUrl: sku.imageUrl ?? null
@@ -61,7 +62,7 @@ export function createSupabaseProductRepository(supabase: SupabaseClient): Produ
       if (!productRow || !isRealTitle(productRow.title) || !isImageList(productRow.images)) return null;
 
       const { data: skuRows, error: skuError } = await supabase.from("product_skus")
-        .select("id, provider_sku_id, label, attributes, price_cny, available_quantity, image_url")
+        .select("id, provider_sku_id, label, attributes, provider_attributes, price_cny, available_quantity, image_url")
         .eq("product_link_id", productRow.id)
         .order("created_at", { ascending: true })
         .limit(500);
@@ -89,6 +90,7 @@ export function createSupabaseProductRepository(supabase: SupabaseClient): Produ
             providerSkuId: sku.provider_sku_id ?? undefined,
             label: sku.label,
             attributes: sku.attributes as Record<string, string>,
+            providerAttributes: (sku.provider_attributes ?? sku.attributes) as Record<string, string>,
             priceCny: Number(sku.price_cny),
             availableQuantity: sku.available_quantity ?? undefined,
             imageUrl: sku.image_url ?? undefined
@@ -147,6 +149,7 @@ function normalizePersistedSnapshot(value: Record<string, unknown>): PersistedPr
         providerSkuId: sku.providerSkuId ? String(sku.providerSkuId) : undefined,
         label: String(sku.label),
         attributes: sku.attributes as Record<string, string>,
+        providerAttributes: (sku.providerAttributes ?? sku.attributes) as Record<string, string>,
         priceCny: Number(sku.priceCny),
         availableQuantity: sku.availableQuantity === null || sku.availableQuantity === undefined ? undefined : Number(sku.availableQuantity),
         imageUrl: sku.imageUrl ? String(sku.imageUrl) : undefined

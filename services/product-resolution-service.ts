@@ -5,6 +5,7 @@ export type PersistedProductSku = {
   providerSkuId?: string;
   label: string;
   attributes: Record<string, string>;
+  providerAttributes?: Record<string, string>;
   priceCny: number;
   availableQuantity?: number;
   imageUrl?: string;

@@ -48,6 +48,31 @@ test("post-purchase capture keeps missing monetary values null and matches only 
   assert.equal(adapter.matchCapturedLine({ ...capture.capture.lines[0], providerSkuId: null }, [{ orderItemId: "item-2", providerItemId: "894128442158", attributes: { "颜色": "粉色", "尺码": "22码" } }, { orderItemId: "item-3", providerItemId: "894128442158", attributes: { "颜色": "粉色", "尺码": "22码" } }]).state, "AMBIGUOUS_MATCH");
 });
 
+test("buyer order list can supply one draft order ID, while capture remains exact", async () => {
+  const root = { dataset: {}, textContent: "订单号 5127226563739002524", innerText: "订单号 5127226563739002524", getAttribute: () => null, getClientRects: () => [1], querySelectorAll: () => [] };
+  const line = { dataset: { offerId: "894128442158", skuId: "pink-22", quantity: "3", unitPrice: "31", subtotal: "93", freight: "8", paidAmount: "101", attributes: '{"颜色":"粉色","尺码":"22码"}' }, textContent: "", getAttribute: () => null, getClientRects: () => [1], querySelectorAll: () => [] };
+  const fixture = { querySelectorAll: (selector) => selector === "*" ? [root, line] : selector === "[data-order-line]" || selector === "[data-offer-id]" ? [line] : [] };
+  const adapter = await loadAdapter("https://air.1688.com/app/ctf-page/trade-order-list/buyer-order-list.html?tab=waitBuyerModify", fixture);
+  const capture = adapter.captureProviderOrder();
+  assert.equal(capture.ok, true);
+  assert.equal(capture.capture.providerOrderId, "5127226563739002524");
+  assert.equal(capture.capture.pageType, "ORDER_DRAFT_LIST");
+  assert.equal(adapter.matchCapturedLine(capture.capture.lines[0], [{ orderItemId: "item-1", providerItemId: "894128442158", providerSkuId: "pink-22", quantity: 3 }]).state, "MATCHED");
+});
+
+test("modern 1688 order detail captures title rows and draft totals from the live component classes", async () => {
+  const link = { href: "https://detail.1688.com/offer/894128442158.html", getClientRects: () => [1] };
+  const title = { dataset: {}, textContent: "Bra ¥8.30 x 2", innerText: "Bra ¥8.30 x 2", parentElement: null, getAttribute: () => null, getClientRects: () => [1], querySelectorAll: (selector) => selector === "a[href]" ? [link] : [] };
+  const item = { textContent: "Bra ¥8.30 x 2 颜色：肤色 尺码：M【34/75ABC】", innerText: "Bra ¥8.30 x 2 颜色：肤色 尺码：M【34/75ABC】", parentElement: null };
+  title.parentElement = item;
+  const total = { dataset: {}, textContent: "原价总计 ¥ 16.60 运费 ¥ 4.00 商品优惠 减 ¥ 1.00 待付款 ¥ 19.60", innerText: "原价总计 ¥ 16.60 运费 ¥ 4.00 商品优惠 减 ¥ 1.00 待付款 ¥ 19.60", getAttribute: () => null, getClientRects: () => [1], querySelectorAll: () => [] };
+  const fixture = { querySelectorAll: (selector) => selector === ".product-list .title" ? [title] : selector === ".total-price-detail" ? [total] : [] };
+  const adapter = await loadAdapter("https://air.1688.com/app/ctf-page/trade-order-detail/index.html?orderId=5127226563739002524", fixture);
+  const capture = adapter.captureProviderOrder();
+  assert.equal(capture.ok, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(capture.capture.lines[0])), { providerOrderId: "5127226563739002524", providerItemId: "894128442158", providerSkuId: null, attributes: { "颜色": "肤色", "尺码": "M【34/75ABC】" }, quantity: 2, actualUnitPriceCny: 8.3, productSubtotalCny: 16.6, domesticFreightCny: 4, actualDiscountCny: 1, paidAmountCny: 19.6, sellerName: null, sellerId: null, providerStatus: null, sellerTrackingNumber: null, purchasedAt: null });
+});
+
 test("attribute mapping uses exact labels, aliases, then an unambiguous exact value", async () => {
   const adapter = await loadAdapter("https://detail.1688.com/offer/894128442158.html");
   const attribute = (key, value) => ({ key, value, normalizedKey: adapter.normalizeVariantText(key), normalizedValue: adapter.normalizeVariantText(value) });
@@ -58,6 +83,21 @@ test("attribute mapping uses exact labels, aliases, then an unambiguous exact va
   assert.equal(adapter.mapAttributeToGroup(attribute("\u5c3a\u7801", "22\u7801 \u5185\u957f14.5cm"), [color, size]).method, "unique-value");
   const aliasSize = group("\u5c3a\u7801\u9009\u62e9", size.options.map((option) => option.text), 1);
   assert.equal(adapter.mapAttributeToGroup(attribute("\u5c3a\u7801", "22\u7801 \u5185\u957f14.5CM"), [color, aliasSize]).method, "label-alias");
+  assert.equal(adapter.mapAttributeToGroup(attribute("Color", "\u7c89\u8272"), [color, size]).method, "label-alias");
+  assert.equal(adapter.mapAttributeToGroup(attribute("Size", "22\u7801 \u5185\u957f14.5CM"), [color, aliasSize]).method, "label-alias");
+});
+
+test("feature color matching normalizes harmless translated set-label differences", async () => {
+  const source = await readFile("extension/adapters/1688/adapter.js", "utf8");
+  assert.match(source, /function normalizeSetVariantLabel/);
+  assert.match(source, /\.replace\(\/\\bgrey\\b\/g, "gray"\)/);
+  assert.match(source, /\["gray", "灰色"\]/);
+  assert.match(source, /\["wine red", "酒红色"\]/);
+  assert.match(source, /wine red\\s\*\(\?:five\|5\).*酒红五件套/);
+  assert.match(source, /五件套/);
+  assert.match(source, /return label\.replace\(\/\\s\+\/g, ""\)\.trim\(\)/);
+  assert.match(source, /normalizedValue: normalizeSetVariantLabel\(value\)/);
+  assert.match(source, /normalizeSetVariantLabel\(requestedValue\)/);
 });
 
 test("confirmed item-label fixture uses title text and remains eligible for local grouping", async () => {
@@ -232,11 +272,19 @@ test("matrix color controls require an exact value and activation-based matrix p
 });
 
 test("matrix preparation batches every product SKU before one cart action", async () => {
-  const content = await readFile("extension/content.js", "utf8");
+  const [content, adapter] = await Promise.all([readFile("extension/content.js", "utf8"), readFile("extension/adapters/1688/adapter.js", "utf8")]);
   assert.ok(content.indexOf('interaction.mode === "SKU_MATRIX_MODE"') < content.indexOf("adapter.findSku(sku)"));
   assert.match(content, /adapter\.prepareSkuMatrixBatch\(skus\)/);
   assert.match(content, /MULTI_SKU_LAYOUT_UNSUPPORTED/);
   assert.ok(content.indexOf("prepareSkuMatrixBatch(skus)") < content.indexOf("adapter.addToCart({"));
+  assert.match(adapter, /const verified = await prepareSkuMatrix\(entry\.request, \{ allowExistingRows: true \}\)/);
+});
+
+test("matrix failures report the requested attributes and live row labels for safe DOM repair", async () => {
+  const adapter = await readFile("extension/adapters/1688/adapter.js", "utf8");
+  assert.match(adapter, /diagnostic\("sku-row-attribute"/);
+  assert.match(adapter, /requestedAttributes: request\.attributes/);
+  assert.match(adapter, /availableRows: rows\.map/);
 });
 
 test("safe cart action selects only the confirmed ADD_CART button inside submitOrder", async () => {
@@ -343,6 +391,10 @@ test("order capture waits for an available receiver and sends capture only after
 test("order capture rejects unsupported pages and reports a bounded content-script timeout", async () => {
   const unsupported = await loadWorker({ runtime: { onMessage: { addListener() {} } }, storage: { local: { get: async () => ({}), set: async () => {} } }, tabs: { get: async () => ({ url: "https://detail.1688.com/offer/1.html" }), sendMessage: async () => ({ ready: true }) } });
   assert.equal(unsupported.isSupportedOrderPageUrl("https://trade.1688.com/order/detail.htm?orderId=1"), true);
+  assert.equal(unsupported.isSupportedOrderPageUrl("https://trade.1688.com/order/order_detail.htm?order_id=1"), true);
+  assert.equal(unsupported.isSupportedOrderPageUrl("https://trade.1688.com/order/confirm_order.htm?orderNo=1"), true);
+  assert.equal(unsupported.isSupportedOrderPageUrl("https://air.1688.com/app/ctf-page/trade-order-list/buyer-order-list.html?tab=waitBuyerModify"), true);
+  assert.equal(unsupported.isSupportedOrderPageUrl("https://air.1688.com/app/ctf-page/trade-order-detail/index.html?orderId=5127226563739002524"), true);
   assert.equal(unsupported.isSupportedOrderPageUrl("https://detail.1688.com/offer/1.html"), false);
   await assert.rejects(unsupported.waitForOrderContent(1, 1000), { code: "ORDER_PAGE_NOT_SUPPORTED" });
   const unavailable = await loadWorker({ runtime: { onMessage: { addListener() {} } }, storage: { local: { get: async () => ({}), set: async () => {} } }, tabs: { get: async () => ({ url: "https://trade.1688.com/order/detail.htm?orderId=168812345678" }), sendMessage: async () => { throw new Error("Receiving end does not exist"); } } });
@@ -379,8 +431,8 @@ test("price changes require a product-wide explicit override and are rechecked b
   assert.match(content, /"PRICE_CHANGED"/);
   assert.match(content, /PRICE_CHANGED_AGAIN/);
   assert.match(content, /priceLines/);
-  assert.match(popup, /Add all approved SKUs/);
-  assert.match(popup, /Cancel/);
+  assert.match(popup, /Approve prices and add all/);
+  assert.match(popup, /Keep for review/);
   assert.match(popup, /Expected \$\{formatCny/);
   assert.match(popup, /Current \$\{formatCny/);
   assert.match(popup, /BRIDGECART_APPROVE_PRICE_OVERRIDE/);
@@ -397,7 +449,7 @@ test("price changes require a product-wide explicit override and are rechecked b
 test("popup/background handshake waits for an injected content script and persists progress", async () => {
   const [popup, background, content] = await Promise.all([readFile("extension/popup.js", "utf8"), readFile("extension/background.js", "utf8"), readFile("extension/content.js", "utf8")]);
   assert.match(popup, /extensionApiFetch\("\/api\/extension\/purchase-queue"\)/);
-  assert.match(popup, /Open \/ Prepare product on 1688/);
+  assert.match(popup, /Verify all SKUs and add once/);
   assert.match(popup, /Expected \$\{formatCny/);
   assert.match(popup, /BRIDGECART_START_PREPARATION/);
   assert.match(background, /waitForExpectedContent/);
@@ -417,4 +469,75 @@ test("manifest injects the 1688 adapter and has no Taobao automation permission"
   assert.doesNotMatch(manifest, /taobao|tmall|scripting/i);
   assert.match(manifest, /adapters\/1688\/adapter\.js/);
   assert.match(manifest, /"service_worker": "background\.js"/);
+  assert.match(manifest, /"sidePanel"/);
+  assert.match(manifest, /"side_panel": \{ "default_path": "popup\.html" \}/);
+  assert.match(manifest, /webNavigation/);
+});
+
+test("toolbar action opens a persistent global side panel instead of a transient popup", async () => {
+  const [manifest, background] = await Promise.all([readFile("extension/manifest.json", "utf8"), readFile("extension/background.js", "utf8")]);
+  assert.doesNotMatch(manifest, /default_popup/);
+  assert.match(background, /function enablePersistentSidePanel/);
+  assert.match(background, /setPanelBehavior\(\{ openPanelOnActionClick: true \}\)/);
+});
+
+test("extension separates verified cart additions from saved provider captures", async () => {
+  const [popup, html, queueMigration] = await Promise.all([
+    readFile("extension/popup.js", "utf8"),
+    readFile("extension/popup.html", "utf8"),
+    readFile("supabase/migrations/20260909014658_extension_captured_task_visibility.sql", "utf8"),
+  ]);
+  assert.match(html, /id="capturedTab"/);
+  assert.match(popup, /awaiting_admin_confirmation/);
+  assert.match(popup, /Captured — awaiting dashboard review/);
+  assert.match(popup, /do not add or capture this product again/);
+  assert.match(queueMigration, /'awaiting_admin_confirmation'/);
+  assert.match(queueMigration, /Provider capture saved\. Awaiting dashboard approval/);
+});
+
+test("admin approval applies one complete provider capture atomically and supports return to review", async () => {
+  const [migration, route, cards] = await Promise.all([
+    readFile("supabase/migrations/20260909060859_approve_provider_purchase_capture.sql", "utf8"),
+    readFile("app/api/admin/purchasing/[id]/provider-capture-approval/route.ts", "utf8"),
+    readFile("components/admin/purchase-task-cards.tsx", "utf8"),
+  ]);
+  assert.match(migration, /captured provider lines no longer match every queued SKU/);
+  assert.match(migration, /sync_provider_order_and_commit_wallet_v2/);
+  assert.match(migration, /provider_capture_approved/);
+  assert.match(migration, /provider_capture_returned_to_review/);
+  assert.match(route, /z\.discriminatedUnion\("action"/);
+  assert.match(route, /approve_provider_purchase_capture/);
+  assert.match(route, /return_provider_capture_to_review/);
+  assert.match(cards, /Approve final cost/);
+  assert.match(cards, /Return for correction/);
+  assert.match(cards, /This does not pay or submit anything to 1688/);
+  const adminService = await readFile("services/admin-operations-service.ts", "utf8");
+  assert.match(adminService, /awaiting_admin_confirmation/);
+  assert.match(adminService, /line\.status === "queued_for_purchase"/);
+  assert.match(adminService, /Once every SKU moves together to Purchased/);
+});
+
+test("provider capture is restricted to verified cart additions and preserves the admin review gate", async () => {
+  const [popup, route, migration, roundingMigration] = await Promise.all([
+    readFile("extension/popup.js", "utf8"),
+    readFile("app/api/extension/provider-order-capture/route.ts", "utf8"),
+    readFile("supabase/migrations/20260830230226_phase4_provider_capture_review_gate.sql", "utf8"),
+    readFile("supabase/migrations/20260909013656_provider_capture_rounding_adjustment.sql", "utf8"),
+  ]);
+  assert.match(popup, /\["cart_added", "awaiting_provider_details"\]/);
+  assert.match(popup, /Only products already verified in the cart can be captured/);
+  assert.match(popup, /\/api\/extension\/provider-order-capture/);
+  assert.match(popup, /proportional_sku_subtotal/);
+  assert.match(popup, /matched\.length !== response\.capture\.lines\.length/);
+  assert.match(popup, /lineTotalsAlreadyDiscounted/);
+  assert.match(popup, /deliveryShares/);
+  assert.match(popup, /roundingAdjustmentCny/);
+  assert.match(popup, /maxRoundingAdjustment/);
+  assert.match(route, /state: "awaiting_admin_confirmation"/);
+  assert.match(route, /roundingAdjustmentCny/);
+  assert.match(migration, /capture must uniquely match every queued SKU line/);
+  assert.match(migration, /final paid total does not reconcile to captured SKU lines/);
+  assert.match(migration, /update public\.purchase_tasks set state='awaiting_admin_confirmation'/);
+  assert.match(roundingMigration, /rounding adjustment exceeds one cent per captured SKU line/);
+  assert.match(roundingMigration, /v_rounding/);
 });

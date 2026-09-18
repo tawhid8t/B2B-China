@@ -2,86 +2,87 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Alert, Button, Card, EmptyState, StatusBadge } from "@/components/ui";
+import { useMemo, useState } from "react";
+import { Alert, Button, Card, EmptyState, Modal, StatusBadge, Textarea } from "@/components/ui";
 
 type PurchaseTask = any;
+type QueueGroup = "ready" | "attention" | "cart" | "provider";
+type SupplierCorrection = { orderItemId: string; providerAttributes: Record<string, string> };
 
-const stateLabel: Record<string, string> = {
-  queued: "Ready for extension",
-  cart_added: "Added to cart — waiting for provider details",
-  awaiting_provider_details: "Waiting for provider details",
-  awaiting_admin_confirmation: "Waiting for admin confirmation",
-  needs_review: "Needs review",
-};
+const stateLabel: Record<string, string> = { queued: "Ready for extension", cart_added: "Added to cart", awaiting_provider_details: "Waiting for provider details", awaiting_admin_confirmation: "Provider details submitted", confirmed: "Provider details approved", needs_review: "Needs review" };
+const groups: { key: QueueGroup; title: string; description: string }[] = [
+  { key: "ready", title: "Ready to add to cart", description: "Complete product orders the extension can safely prepare in one cart action." },
+  { key: "attention", title: "Needs attention", description: "Errors and supplier-SKU issues. Cart actions stay blocked until resolved." },
+  { key: "cart", title: "Added to cart — waiting for provider information", description: "All selected SKUs were verified and added together. Checkout remains manual." },
+  { key: "provider", title: "Provider information updated", description: "Captured provider information is ready for review or has been approved." }
+];
+
+function groupFor(task: PurchaseTask): QueueGroup { if (task.hasMixedSkuStatuses || task.state === "needs_review") return "attention"; if (task.state === "queued") return "ready"; if (task.state === "cart_added" || task.state === "awaiting_provider_details") return "cart"; return "provider"; }
 
 export function PurchaseTaskCards({ tasks }: { tasks: PurchaseTask[] }) {
   const router = useRouter();
   const [working, setWorking] = useState<string>();
   const [error, setError] = useState<string>();
-
+  const [filter, setFilter] = useState<QueueGroup | "all">("all");
+  const [repairTask, setRepairTask] = useState<PurchaseTask>();
+  const grouped = useMemo(() => Object.fromEntries(groups.map((group) => [group.key, tasks.filter((task) => groupFor(task) === group.key)])) as Record<QueueGroup, PurchaseTask[]>, [tasks]);
   async function setState(taskId: string, state: "queued" | "needs_review") {
     const reason = state === "needs_review" ? window.prompt("Why does this product need manual review?")?.trim() : undefined;
     if (state === "needs_review" && !reason) return;
-    setWorking(taskId);
-    setError(undefined);
-    try {
-      const response = await fetch(`/api/admin/purchasing/${taskId}/state`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ state, reason }),
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error?.message ?? "Purchase task could not be updated.");
-      router.refresh();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Purchase task could not be updated.");
-    } finally {
-      setWorking(undefined);
-    }
+    setWorking(taskId); setError(undefined);
+    try { const response = await fetch(`/api/admin/purchasing/${taskId}/state`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ state, reason }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error?.message ?? "Purchase task could not be updated."); router.refresh(); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Purchase task could not be updated."); } finally { setWorking(undefined); }
   }
-
+  async function reviewProviderCapture(task: PurchaseTask, action: "approve" | "return_to_review") {
+    const reason = action === "return_to_review" ? window.prompt("Why must this provider capture be corrected?")?.trim() : undefined;
+    if (action === "return_to_review" && !reason) return;
+    if (action === "approve" && !window.confirm("Approve this captured supplier cost? Every SKU in this product order will move to Purchased. This does not pay or submit anything to 1688.")) return;
+    setWorking(task.id); setError(undefined);
+    try { const response = await fetch(`/api/admin/purchasing/${task.id}/provider-capture-approval`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(action === "approve" ? { action } : { action, reason }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error?.message ?? "Provider capture could not be updated."); router.refresh(); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Provider capture could not be updated."); } finally { setWorking(undefined); }
+  }
   if (!tasks.length) return <EmptyState title="No purchase tasks" description="Confirmed product orders will appear here until their provider purchase is finalized." />;
-
-  return <section className="space-y-5" aria-label="Product purchase queue">
+  return <section className="space-y-6" aria-label="Product purchase queue">
     {error && <Alert variant="danger" title="Purchase task failed">{error}</Alert>}
-    {tasks.map((task) => {
-      const order = task.product_order;
-      const product = order?.product;
-      const lines = order?.order_items ?? [];
-      const hasMixedSkuStatuses = Boolean(task.hasMixedSkuStatuses);
-      const expected = lines.reduce((total: number, line: any) => total + Number(line.cny_price ?? 0) * Number(line.quantity ?? 0), 0);
-      return <Card key={task.id} className="overflow-hidden border-border shadow-soft">
-        <header className="flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-border bg-surface-muted px-4 py-4 sm:px-5">
-          <Field label="Order number" value={order?.order_number ?? "—"} />
-          <Field label="Client" value={order?.client?.business_name ?? "—"} />
-          <Field label="Task state" value={hasMixedSkuStatuses ? "Needs SKU status repair" : stateLabel[task.state] ?? task.state} />
-          <span className={`ml-auto rounded-full px-3 py-1 text-xs font-bold ${hasMixedSkuStatuses || task.state === "needs_review" ? "bg-warning/15 text-warning" : task.state === "cart_added" ? "bg-success/15 text-success" : "bg-commerce-100 text-commerce-700"}`}>{hasMixedSkuStatuses ? "Needs review" : stateLabel[task.state] ?? task.state}</span>
-        </header>
-        <div className="p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-card border border-border bg-surface-muted">
-                {product?.images?.[0] ? <img src={product.images[0]} alt="" className="h-full w-full object-contain p-1.5" /> : "—"}
-              </div>
-              <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[0.1em] text-muted">Product snapshot</p><h2 className="mt-1 text-base font-semibold sm:text-lg">{product?.title ?? "Product unavailable"}</h2><p className="mt-1 text-sm text-muted">{product?.provider_item_id ?? "Provider item pending"} · {product?.provider ?? "Provider pending"}</p></div>
-            </div>
-            <div className="flex gap-2">
-              {!hasMixedSkuStatuses && task.state !== "needs_review" && task.state !== "cart_added" && <Button size="sm" variant="outline" loading={working === task.id} onClick={() => setState(task.id, "needs_review")}>Needs review</Button>}
-              {!hasMixedSkuStatuses && task.state === "needs_review" && <Button size="sm" loading={working === task.id} onClick={() => setState(task.id, "queued")}>Retry purchase</Button>}
-            </div>
-          </div>
-          {task.last_error && <Alert className="mt-5" variant="warning" title="Manual review required">{task.last_error}</Alert>}
-          {hasMixedSkuStatuses && <Alert className="mt-5" variant="warning" title="SKU status repair required">This historical product order has a mix of Confirmed and Purchasing SKU lines. It is shown here for visibility, but it cannot be sent to the extension until all SKU lines are queued together.</Alert>}
-          {task.state === "cart_added" && <Alert className="mt-5" variant="success" title="Product added to cart">All SKU lines were confirmed in one cart action. Provider price and delivery details are still pending.</Alert>}
-          <div className="mt-5 overflow-x-auto rounded-card border border-border"><table className="min-w-[760px] w-full text-left text-sm"><thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted"><tr><th className="p-3">SKU / color / size</th><th>Expected price</th><th>Qty</th><th>Subtotal</th><th>Status</th></tr></thead><tbody className="divide-y divide-border">{lines.map((line: any) => <tr key={line.id}><td className="p-3"><div className="flex items-center gap-3">{line.sku?.image_url && <img src={line.sku.image_url} alt="" className="h-12 w-12 rounded border border-border object-contain p-1" />}<div><p className="font-semibold">{line.sku?.label ?? "Variant unavailable"}</p><p className="mt-1 text-xs text-muted">{Object.entries(line.sku?.attributes ?? {}).map(([key, value]) => `${key}: ${value}`).join(" · ") || "No attributes"}</p></div></div></td><td>¥{Number(line.cny_price ?? 0).toFixed(2)}</td><td className="font-semibold">{line.quantity}</td><td>¥{(Number(line.cny_price ?? 0) * Number(line.quantity ?? 0)).toFixed(2)}</td><td><StatusBadge status={line.status} /></td></tr>)}</tbody></table></div>
-          <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-3"><Field label="Expected product total" value={`CNY ${expected.toFixed(2)}`} /><Field label="SKU lines" value={String(lines.length)} /><Field label="Cart added" value={task.cart_added_at ? new Intl.DateTimeFormat("en-BD", { dateStyle: "medium", timeStyle: "short" }).format(new Date(task.cart_added_at)) : "Not yet"} /></div>
-        </div>
-      </Card>;
-    })}
+    <section className="sticky top-2 z-10 rounded-card border border-border bg-surface/95 p-3 shadow-soft backdrop-blur" aria-label="Purchase queue sections"><div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{groups.map((group) => <button key={group.key} type="button" onClick={() => setFilter(filter === group.key ? "all" : group.key)} className={`rounded-control border p-3 text-left transition ${filter === group.key ? "border-commerce-500 bg-commerce-50" : "border-border bg-surface hover:border-commerce-300"}`}><span className="text-2xl font-bold text-foreground">{grouped[group.key].length}</span><span className="ml-2 text-sm font-semibold">{group.title}</span><span className="mt-1 block text-xs leading-5 text-muted">{group.description}</span></button>)}</div></section>
+    {groups.filter((group) => filter === "all" || filter === group.key).map((group) => <QueueSection key={group.key} group={group} tasks={grouped[group.key]} working={working} onSetState={setState} onReviewProviderCapture={reviewProviderCapture} onRepair={setRepairTask} />)}
+    <SupplierAttributeRepair task={repairTask} onClose={() => setRepairTask(undefined)} onDone={() => { setRepairTask(undefined); router.refresh(); }} />
   </section>;
 }
 
-function Field({ label, value }: { label: string; value: string }) {
-  return <div><p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-muted">{label}</p><p className="mt-1 max-w-[22rem] truncate font-semibold" title={value}>{value}</p></div>;
+function QueueSection({ group, tasks, working, onSetState, onReviewProviderCapture, onRepair }: { group: typeof groups[number]; tasks: PurchaseTask[]; working?: string; onSetState: (taskId: string, state: "queued" | "needs_review") => Promise<void>; onReviewProviderCapture: (task: PurchaseTask, action: "approve" | "return_to_review") => Promise<void>; onRepair: (task: PurchaseTask) => void }) { return <section aria-labelledby={`purchase-${group.key}`} className="scroll-mt-24"><div className="mb-3 flex flex-wrap items-end justify-between gap-2"><div><h2 id={`purchase-${group.key}`} className="text-lg font-semibold">{group.title}</h2><p className="mt-1 text-sm text-muted">{group.description}</p></div><span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-bold">{tasks.length}</span></div>{!tasks.length ? <Card className="border-dashed p-4 text-sm text-muted">Nothing in this section.</Card> : <div className="space-y-4">{tasks.map((task) => <PurchaseTaskCard key={task.id} task={task} working={working} onSetState={onSetState} onReviewProviderCapture={onReviewProviderCapture} onRepair={onRepair} />)}</div>}</section>; }
+
+function PurchaseTaskCard({ task, working, onSetState, onReviewProviderCapture, onRepair }: { task: PurchaseTask; working?: string; onSetState: (taskId: string, state: "queued" | "needs_review") => Promise<void>; onReviewProviderCapture: (task: PurchaseTask, action: "approve" | "return_to_review") => Promise<void>; onRepair: (task: PurchaseTask) => void }) {
+  const order = task.product_order, product = order?.product, lines = order?.order_items ?? [], capture = task.providerCapture, hasMixedSkuStatuses = Boolean(task.hasMixedSkuStatuses), expected = lines.reduce((total: number, line: any) => total + Number(line.cny_price ?? 0) * Number(line.quantity ?? 0), 0), isCartAdded = task.state === "cart_added" || task.state === "awaiting_provider_details";
+  return <Card className="overflow-hidden border-border shadow-soft"><header className="flex flex-wrap items-center gap-x-5 gap-y-3 border-b border-border bg-surface-muted px-4 py-4 sm:px-5"><Field label="Order" value={order?.order_number ?? "—"} /><Field label="Client" value={order?.client?.business_name ?? "—"} /><span className={`ml-auto rounded-full px-3 py-1 text-xs font-bold ${hasMixedSkuStatuses || task.state === "needs_review" ? "bg-warning/15 text-warning" : isCartAdded ? "bg-success/15 text-success" : "bg-commerce-100 text-commerce-700"}`}>{hasMixedSkuStatuses ? "SKU repair required" : stateLabel[task.state] ?? task.state}</span></header><div className="p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-4"><div className="flex min-w-0 items-start gap-4"><div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-card border border-border bg-surface-muted">{product?.images?.[0] ? <img src={product.images[0]} alt="" className="h-full w-full object-contain p-1.5" /> : "—"}</div><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[0.1em] text-muted">Product snapshot</p><h3 className="mt-1 text-base font-semibold sm:text-lg">{product?.title ?? "Product unavailable"}</h3><a className="mt-1 block truncate text-sm text-commerce-700 underline" href={product?.original_url} target="_blank" rel="noreferrer">Open original 1688 product</a></div></div><div className="flex flex-wrap gap-2">{task.state === "needs_review" && !hasMixedSkuStatuses && <><Button size="sm" onClick={() => onRepair(task)}>Repair supplier SKUs</Button><Button size="sm" variant="outline" loading={working === task.id} onClick={() => onSetState(task.id, "queued")}>Return to extension queue</Button></>}{!hasMixedSkuStatuses && task.state === "queued" && <Button size="sm" variant="outline" loading={working === task.id} onClick={() => onSetState(task.id, "needs_review")}>Needs review</Button>}</div></div>{task.last_error && <Alert className="mt-5" variant="warning" title="Manual review required">{task.last_error}</Alert>}{hasMixedSkuStatuses && <Alert className="mt-5" variant="warning" title="SKU status repair required">This product has mixed SKU statuses. It cannot be added to cart until every SKU is queued together.</Alert>}{isCartAdded && <Alert className="mt-5" variant="success" title="All SKUs added together">Cart addition was verified as one action. This did not check out or purchase the product; provider information is still required.</Alert>}{capture && <ProviderCaptureSummary capture={capture} expected={expected} />}<div className="mt-5 overflow-x-auto rounded-card border border-border"><table className="min-w-[760px] w-full text-left text-sm"><thead className="bg-surface-muted text-xs uppercase tracking-wide text-muted"><tr><th className="p-3">SKU / client selection</th><th>Expected price</th><th>Qty</th><th>Subtotal</th><th>Status</th></tr></thead><tbody className="divide-y divide-border">{lines.map((line: any) => <tr key={line.id}><td className="p-3"><div className="flex items-center gap-3">{line.sku?.image_url && <img src={line.sku.image_url} alt="" className="h-12 w-12 rounded border border-border object-contain p-1" />}<div><p className="font-semibold">{line.sku?.label ?? "Variant unavailable"}</p><p className="mt-1 text-xs text-muted">{formatAttributes(line.display_attributes_snapshot, line.sku?.attributes)}</p></div></div></td><td>¥{Number(line.cny_price ?? 0).toFixed(2)}</td><td className="font-semibold">{line.quantity}</td><td>¥{(Number(line.cny_price ?? 0) * Number(line.quantity ?? 0)).toFixed(2)}</td><td><StatusBadge status={line.status} /></td></tr>)}</tbody></table></div><div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-3"><Field label="Expected product total" value={`CNY ${expected.toFixed(2)}`} /><Field label="SKU lines" value={String(lines.length)} /><Field label="Cart added" value={task.cart_added_at ? new Intl.DateTimeFormat("en-BD", { dateStyle: "medium", timeStyle: "short" }).format(new Date(task.cart_added_at)) : "Not yet"} /></div></div></Card>;
 }
+
+function ProviderCaptureSummary({ capture, expected }: { capture: any; expected: number }) {
+  const router = useRouter(); const [working, setWorking] = useState(false); const [error, setError] = useState<string>();
+  const actualSubtotal = (capture.provider_purchase_capture_lines ?? []).reduce((total: number, line: any) => total + Number(line.actual_subtotal_cny ?? 0), 0);
+  const difference = Number(capture.final_paid_cny) - expected;
+  async function act(action: "approve" | "return_to_review") {
+    const reason = action === "return_to_review" ? window.prompt("Why must this provider capture be corrected?")?.trim() : undefined;
+    if (action === "return_to_review" && !reason) return;
+    if (action === "approve" && !window.confirm("Approve this captured supplier cost? Every SKU in this product order will move to Purchased. This does not pay or submit anything to 1688.")) return;
+    setWorking(true); setError(undefined);
+    try { const response = await fetch(`/api/admin/purchasing/${capture.purchase_task_id}/provider-capture-approval`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(action === "approve" ? { action } : { action, reason }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error?.message ?? "Provider capture could not be updated."); router.refresh(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Provider capture could not be updated."); } finally { setWorking(false); }
+  }
+  return <Alert className="mt-5" variant="success" title={capture.taskState === "confirmed" ? "Provider cost approved" : "Provider details captured — awaiting admin approval"}><div className="grid gap-2 text-sm sm:grid-cols-2"><span>Provider order: <strong>{capture.provider_order_id}</strong></span><span>Seller: <strong>{capture.seller_name || "Not supplied"}</strong></span><span>Expected product total: <strong>CNY {expected.toFixed(2)}</strong></span><span>Captured SKU subtotal: <strong>CNY {actualSubtotal.toFixed(2)}</strong></span><span>Delivery / discount: <strong>CNY {Number(capture.domestic_delivery_cny).toFixed(2)} / CNY {Number(capture.discount_cny).toFixed(2)}</strong></span><span>Final paid: <strong>CNY {Number(capture.final_paid_cny).toFixed(2)} ({difference >= 0 ? "+" : ""}{difference.toFixed(2)} vs expected)</strong></span></div>{capture.taskState === "awaiting_admin_confirmation" && <div className="mt-4 flex flex-wrap gap-2"><Button size="sm" loading={working} onClick={() => act("approve")}>Approve final cost</Button><Button size="sm" variant="outline" loading={working} onClick={() => act("return_to_review")}>Return for correction</Button></div>}{error && <p className="mt-2 text-sm text-danger">{error}</p>}<p className="mt-2 text-xs">{capture.taskState === "confirmed" ? "Approved costs have been committed for every SKU in this product order." : "This is captured evidence only. Approval is required before client costs or purchase status change."}</p></Alert>;
+}
+
+function SupplierAttributeRepair({ task, onClose, onDone }: { task?: PurchaseTask; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState(""); const [drafts, setDrafts] = useState<Record<string, string>>({}); const [error, setError] = useState<string>(); const [working, setWorking] = useState(false);
+  const lines = task?.product_order?.order_items ?? [];
+  function draftFor(line: any) { return drafts[line.id] ?? JSON.stringify(line.provider_attributes_snapshot && Object.keys(line.provider_attributes_snapshot).length ? line.provider_attributes_snapshot : line.sku?.provider_attributes ?? line.display_attributes_snapshot ?? line.sku?.attributes ?? {}, null, 2); }
+  async function submit() {
+    if (!task) return; setError(undefined); const corrections: SupplierCorrection[] = [];
+    try { for (const line of lines) { const providerAttributes = JSON.parse(draftFor(line)); if (!providerAttributes || Array.isArray(providerAttributes) || typeof providerAttributes !== "object") throw new Error(`SKU ${line.sku?.label ?? line.id} must be an attribute object.`); corrections.push({ orderItemId: line.id, providerAttributes }); } } catch (cause) { setError(cause instanceof Error ? cause.message : "Enter valid supplier attribute JSON for every SKU."); return; }
+    if (!reason.trim()) { setError("A correction reason is required."); return; }
+    setWorking(true); try { const response = await fetch(`/api/admin/purchasing/${task.id}/sku-corrections`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reason, corrections }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error?.message ?? "Supplier SKU correction failed."); onDone(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Supplier SKU correction failed."); } finally { setWorking(false); }
+  }
+  return <Modal open={Boolean(task)} onOpenChange={(open) => !open && onClose()} title="Repair exact supplier SKU attributes" description="Copy the exact label and value shown on 1688 for every SKU. This is product-wide, audited, and returns all SKU lines to the extension queue together." footer={<div className="flex justify-end gap-3 pb-4"><Button variant="outline" onClick={onClose}>Cancel</Button><Button loading={working} onClick={submit}>Save all supplier SKUs</Button></div>}><div className="space-y-5">{error && <Alert variant="danger" title="Cannot save correction">{error}</Alert>}<Alert variant="warning" title="Do not translate these values">The client keeps its English selection. The extension will use only the exact supplier JSON entered here.</Alert>{lines.map((line: any) => <div key={line.id} className="rounded-card border border-border p-3"><p className="font-semibold">{line.sku?.label ?? "SKU"} × {line.quantity}</p><p className="mt-1 text-xs text-muted">Client selection: {formatAttributes(line.display_attributes_snapshot, line.sku?.attributes)}</p><Textarea className="mt-3 font-mono text-xs" label="Exact 1688 attributes (JSON)" value={draftFor(line)} onChange={(event) => setDrafts((current) => ({ ...current, [line.id]: event.target.value }))} rows={4} /></div>)}<Textarea label="Reason for correction" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Example: provider feed returned Color instead of the live 1688 value; verified from the product page." rows={3} /></div></Modal>;
+}
+
+function formatAttributes(primary: unknown, fallback: unknown) { const attributes = primary && typeof primary === "object" && Object.keys(primary as object).length ? primary : fallback; return Object.entries((attributes ?? {}) as Record<string, unknown>).map(([key, value]) => `${key}: ${value}`).join(" · ") || "No attributes"; }
+function Field({ label, value }: { label: string; value: string }) { return <div><p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-muted">{label}</p><p className="mt-1 max-w-[22rem] truncate font-semibold" title={value}>{value}</p></div>; }

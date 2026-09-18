@@ -1,5 +1,7 @@
 # BridgeCart Operations MVP
 
+> **Development pause / December restart:** Begin with the [December handoff](docs/DECEMBER_HANDOFF.md), [launch readiness audit](docs/LAUNCH_READINESS_AUDIT.md), and [launch backlog](docs/LAUNCH_BACKLOG.md). The handoff records the September source checkpoint; this older setup overview is not a current launch-status report.
+
 Greenfield starter for a China-to-Bangladesh sourcing and fulfillment platform.
 
 ## Stack

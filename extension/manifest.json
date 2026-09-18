@@ -1,19 +1,20 @@
 {
   "manifest_version": 3,
   "name": "BridgeCart Purchase Assistant",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Admin-only helper for preparing exact 1688 cart items.",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "sidePanel", "webNavigation"],
   "host_permissions": ["https://*.1688.com/*", "https://1688.com/*", "http://localhost:3000/*"],
-  "action": {
-    "default_popup": "popup.html"
-  },
+  "action": { "default_title": "Open BridgeCart assistant" },
+  "side_panel": { "default_path": "popup.html" },
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
       "matches": ["https://*.1688.com/*", "https://1688.com/*"],
+      "all_frames": true,
+      "match_about_blank": true,
       "js": ["adapters/1688/adapter.js", "content.js"]
     }
   ]

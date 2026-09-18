@@ -60,7 +60,7 @@ test("normalizes OTAPI product payloads and preserves the raw payload", () => {
   assert.equal(product.domesticDeliveryCny, 8);
   assert.equal(product.priceMinCny, 42);
   assert.equal(product.priceMaxCny, 46);
-  assert.deepEqual(product.skus[0], { id: "123:456", providerSkuId: "123:456", label: "Black / M", attributes: { color: "Black", size: "M" }, priceCny: 42, availableQuantity: 120, imageUrl: "https://images.example/black.jpg" });
+  assert.deepEqual(product.skus[0], { id: "123:456", providerSkuId: "123:456", label: "Black / M", attributes: { color: "Black", size: "M" }, providerAttributes: { color: "Black", size: "M" }, priceCny: 42, availableQuantity: 120, imageUrl: "https://images.example/black.jpg" });
   assert.equal(product.raw, payload);
 });
 
@@ -84,8 +84,8 @@ test("normalizes OTAPI ConfiguredItems and Configurators into selectable SKU att
 
   assert.equal(product.titleCn, "\u51c9\u978b");
   assert.deepEqual(product.skus, [
-    { id: "red-36", providerSkuId: "red-36", label: "Red / 36", attributes: { Color: "Red", Size: "36" }, priceCny: 14.5, availableQuantity: 12, imageUrl: undefined },
-    { id: "blue-37", providerSkuId: "blue-37", label: "Blue / 37", attributes: { Color: "Blue", Size: "37" }, priceCny: 15, availableQuantity: 0, imageUrl: undefined }
+    { id: "red-36", providerSkuId: "red-36", label: "Red / 36", attributes: { Color: "Red", Size: "36" }, providerAttributes: { Color: "Red", Size: "36" }, priceCny: 14.5, availableQuantity: 12, imageUrl: undefined },
+    { id: "blue-37", providerSkuId: "blue-37", label: "Blue / 37", attributes: { Color: "Blue", Size: "37" }, providerAttributes: { Color: "Blue", Size: "37" }, priceCny: 15, availableQuantity: 0, imageUrl: undefined }
   ]);
 });
 

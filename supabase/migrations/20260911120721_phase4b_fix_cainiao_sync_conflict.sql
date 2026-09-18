@@ -1,0 +1,147 @@
+-- `tracking_number` is also an OUT parameter of this function.  In an
+-- expression-index ON CONFLICT target PostgreSQL otherwise treats that name as
+-- ambiguous and rejects every screenshot/manual import before any parcel is
+-- written.  Keep the public result shape and make column precedence explicit.
+create or replace function public.sync_cainiao_parcels(
+  p_parcels jsonb,
+  p_source text default 'manual'
+)
+returns table (
+  tracking_number text,
+  parcel_id uuid,
+  inserted boolean,
+  matched_order_item_count integer,
+  parcel_status public.parcel_status
+)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+#variable_conflict use_column
+declare
+  v_actor uuid := auth.uid();
+  v_item jsonb;
+  v_tracking text;
+  v_source text := lower(btrim(coalesce(p_source, '')));
+  v_batch_id uuid := nullif(current_setting('app.cainiao_import_batch_id', true), '')::uuid;
+  v_before jsonb;
+  v_parcel public.parcels%rowtype;
+  v_exists boolean;
+  v_source_status text;
+  v_next_status public.parcel_status;
+  v_matched integer;
+begin
+  if v_actor is null or public.current_user_role() not in ('staff_receiver', 'admin', 'super_admin') then
+    raise exception using errcode = '42501', message = 'receiving role required';
+  end if;
+  if v_source not in ('manual', 'screenshot') then
+    raise exception using errcode = '22023', message = 'unsupported parcel source';
+  end if;
+  if jsonb_typeof(p_parcels) <> 'array' or jsonb_array_length(p_parcels) not between 1 and 200 then
+    raise exception using errcode = '22023', message = 'one to two hundred parcels are required';
+  end if;
+  if exists (
+    select 1 from jsonb_array_elements(p_parcels) value
+    group by upper(regexp_replace(btrim(coalesce(value->>'trackingNumber', '')), '\\s+', '', 'g'))
+    having count(*) > 1
+  ) then
+    raise exception using errcode = '22023', message = 'duplicate tracking number in import batch';
+  end if;
+
+  for v_item in select value from jsonb_array_elements(p_parcels)
+  loop
+    v_tracking := upper(regexp_replace(btrim(coalesce(v_item->>'trackingNumber', '')), '\\s+', '', 'g'));
+    if v_tracking !~ '^[A-Z0-9-]{6,64}$' then
+      raise exception using errcode = '22023', message = 'invalid parcel tracking number';
+    end if;
+    if octet_length(coalesce(v_item->'rawCapture', '{}'::jsonb)::text) > 65536 then
+      raise exception using errcode = '22023', message = 'parcel source evidence is too large';
+    end if;
+
+    v_source_status := nullif(btrim(coalesce(v_item->>'status', '')), '');
+    v_next_status := case
+      when coalesce(v_source_status, '') ~* '(returned|return|退回|退件|拒收)' then 'exception'::public.parcel_status
+      when coalesce(v_item->>'pickupCode', '') <> ''
+        or coalesce(v_source_status, '') ~* '(ready.*pickup|awaiting.*pickup|待取件|已到驿站|已入库)' then 'delivered'::public.parcel_status
+      else 'in_transit'::public.parcel_status
+    end;
+    if v_next_status = 'delivered' and nullif(btrim(coalesce(v_item->>'pickupCode', '')), '') is null then
+      raise exception using errcode = '22023', message = 'pickup code is required for a ready parcel';
+    end if;
+
+    select exists(select 1 from public.parcels p where upper(regexp_replace(btrim(p.tracking_number), '\\s+', '', 'g')) = v_tracking) into v_exists;
+    select to_jsonb(p) into v_before from public.parcels p where upper(regexp_replace(btrim(p.tracking_number), '\\s+', '', 'g')) = v_tracking for update;
+
+    insert into public.parcels (
+      tracking_number, status, source, source_status, carrier, pickup_code,
+      pickup_station, source_arrived_at, source_expected_arrival_at,
+      source_last_tracking_update_at, source_synced_at, source_payload, cainiao_import_batch_id
+    ) values (
+      v_tracking, v_next_status, v_source, v_source_status,
+      nullif(btrim(v_item->>'carrier'), ''), nullif(btrim(v_item->>'pickupCode'), ''), nullif(btrim(v_item->>'pickupStation'), ''),
+      nullif(v_item->>'arrivedAt', '')::timestamptz, nullif(v_item->>'expectedArrivalAt', '')::timestamptz,
+      nullif(v_item->>'lastTrackingUpdateAt', '')::timestamptz, now(), coalesce(v_item->'rawCapture', '{}'::jsonb), v_batch_id
+    )
+    on conflict ((upper(regexp_replace(btrim(tracking_number), '\\s+', '', 'g')))) do update
+    set source = excluded.source,
+        source_status = coalesce(excluded.source_status, public.parcels.source_status),
+        carrier = coalesce(excluded.carrier, public.parcels.carrier),
+        pickup_code = coalesce(excluded.pickup_code, public.parcels.pickup_code),
+        pickup_station = coalesce(excluded.pickup_station, public.parcels.pickup_station),
+        source_arrived_at = coalesce(excluded.source_arrived_at, public.parcels.source_arrived_at),
+        source_expected_arrival_at = coalesce(excluded.source_expected_arrival_at, public.parcels.source_expected_arrival_at),
+        source_last_tracking_update_at = coalesce(excluded.source_last_tracking_update_at, public.parcels.source_last_tracking_update_at),
+        source_synced_at = now(), source_payload = excluded.source_payload,
+        cainiao_import_batch_id = coalesce(excluded.cainiao_import_batch_id, public.parcels.cainiao_import_batch_id),
+        status = case when public.parcels.status in ('received', 'partially_received', 'closed') then public.parcels.status else excluded.status end
+    returning * into v_parcel;
+
+    insert into public.parcel_items (parcel_id, order_item_id)
+    select distinct v_parcel.id, po.order_item_id
+    from public.provider_tracking_captures ptc
+    join public.provider_orders po on po.provider = ptc.provider and po.provider_order_id = ptc.provider_order_id
+    where ptc.provider = 'alibaba1688'
+      and upper(regexp_replace(btrim(ptc.tracking_number), '\\s+', '', 'g')) = v_tracking
+    on conflict (parcel_id, order_item_id) do nothing;
+
+    select count(*) into v_matched from public.parcel_items pi where pi.parcel_id = v_parcel.id;
+    if v_matched > 0 and v_parcel.unmatched_review_status = 'open' then
+      update public.parcels set unmatched_review_status = 'linked', unmatched_reviewed_by = v_actor, unmatched_reviewed_at = now(), unmatched_review_reason = 'Matched automatically by normalized tracking number.'
+      where id = v_parcel.id returning * into v_parcel;
+    end if;
+
+    perform private.write_audit_log_internal('parcel', v_parcel.id,
+      case when v_exists then 'cainiao_parcel_refreshed' else 'cainiao_parcel_discovered' end,
+      v_before, jsonb_build_object('tracking_number', v_parcel.tracking_number, 'status', v_parcel.status, 'pickup_code', v_parcel.pickup_code, 'source', v_source, 'import_batch_id', v_batch_id, 'matched_order_item_count', v_matched), null);
+
+    if v_batch_id is not null then
+      update public.cainiao_import_batches
+      set inserted_count = inserted_count + case when v_exists then 0 else 1 end,
+          refreshed_count = refreshed_count + case when v_exists then 1 else 0 end,
+          matched_count = matched_count + case when v_matched > 0 then 1 else 0 end,
+          unmatched_count = unmatched_count + case when v_matched = 0 then 1 else 0 end
+      where id = v_batch_id;
+    end if;
+    return query select v_parcel.tracking_number, v_parcel.id, not v_exists, v_matched, v_parcel.status;
+  end loop;
+end;
+$$;
+
+create or replace function public.sync_cainiao_parcels_for_profile(
+  p_profile_id uuid, p_import_batch_id uuid, p_parcels jsonb, p_source text
+)
+returns table (tracking_number text, parcel_id uuid, inserted boolean, matched_order_item_count integer, parcel_status public.parcel_status)
+language plpgsql security definer set search_path = ''
+as $$
+declare v_batch public.cainiao_import_batches%rowtype;
+begin
+  if p_profile_id is null or p_import_batch_id is null then raise exception using errcode = '22023', message = 'profile and import batch are required'; end if;
+  if jsonb_typeof(p_parcels) <> 'array' or jsonb_array_length(p_parcels) not between 1 and 200 then raise exception using errcode = '22023', message = 'one to two hundred parcels are required'; end if;
+  select * into v_batch from public.cainiao_import_batches where id = p_import_batch_id and created_by = p_profile_id and source = lower(btrim(coalesce(p_source, ''))) for update;
+  if not found then raise exception using errcode = 'P0002', message = 'Cainiao import batch not found'; end if;
+  perform set_config('request.jwt.claim.sub', p_profile_id::text, true);
+  perform set_config('app.cainiao_import_batch_id', p_import_batch_id::text, true);
+  return query select * from public.sync_cainiao_parcels(p_parcels, p_source);
+  update public.cainiao_import_batches set completed_at = now() where id = p_import_batch_id;
+end;
+$$;

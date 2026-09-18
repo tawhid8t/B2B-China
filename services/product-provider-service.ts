@@ -350,12 +350,18 @@ function normalizeSkus(result: Record<string, unknown>) {
     if (!providerSkuId) return [];
     const resolvedConfigurators = configuratorAttributes(sku.Configurators, attributesById);
     const attributes = resolvedConfigurators?.attributes ?? stringRecord(sku.Attributes ?? sku.attributes);
+    const providerAttributes = resolvedConfigurators?.providerAttributes ?? attributes;
+    // A provider occasionally returns a configurator label as its own value
+    // (for example `Color: Color`). It is not a selectable supplier SKU, so
+    // never expose it to a client or let it enter an order snapshot.
+    if (!hasUsableAttributes(attributes) || !hasUsableAttributes(providerAttributes)) return [];
     const label = firstString(sku.DisplayName, sku.label, sku.Title, sku.title) ?? (Object.values(attributes).join(" / ") || `Option ${index + 1}`);
     return [{
       id: providerSkuId,
       providerSkuId,
       label,
       attributes,
+      providerAttributes,
       priceCny: optionalNumber(price.OriginalPrice ?? price.Price ?? sku.price) ?? fallbackPrice,
       availableQuantity: optionalNumber(sku.Quantity ?? sku.available_quantity),
       imageUrl: firstString(sku.ImageUrl, sku.image_url, asRecord(sku.Image).Url, asRecord(sku.image).url, asRecord(sku.Picture).Url, resolvedConfigurators?.imageUrl)
@@ -382,17 +388,31 @@ function buildAttributeLookup(value: unknown) {
 function configuratorAttributes(value: unknown, lookup: Map<string, Record<string, unknown>>) {
   if (!Array.isArray(value)) return undefined;
   let imageUrl: string | undefined;
-  const attributes = Object.fromEntries(value.flatMap((rawConfigurator) => {
+  const entries = value.flatMap((rawConfigurator) => {
     const configurator = asRecord(rawConfigurator);
     const pid = firstString(configurator.Pid, configurator.pid);
     const vid = firstString(configurator.Vid, configurator.vid);
     const definition = pid && vid ? lookup.get(`${pid}:${vid}`) : undefined;
-    const name = firstString(definition?.PropertyName, definition?.OriginalPropertyName, configurator.Name, configurator.name, pid);
-    const option = firstString(definition?.Value, definition?.OriginalValue, configurator.Value, configurator.value, vid);
+    const name = firstString(definition?.PropertyName, configurator.Name, configurator.name, definition?.OriginalPropertyName, pid);
+    const option = firstString(definition?.Value, configurator.Value, configurator.value, definition?.OriginalValue, vid);
+    const providerName = firstString(definition?.OriginalPropertyName, definition?.PropertyName, configurator.Name, configurator.name, pid);
+    const providerOption = firstString(definition?.OriginalValue, definition?.Value, configurator.Value, configurator.value, vid);
     imageUrl ??= firstString(definition?.ImageUrl, definition?.MiniImageUrl);
-    return name && option ? [[name, option]] : [];
-  }));
-  return { attributes, imageUrl };
+    return name && option && providerName && providerOption ? [[name, option, providerName, providerOption]] : [];
+  });
+  return {
+    attributes: Object.fromEntries(entries.map(([name, option]) => [name, option])),
+    providerAttributes: Object.fromEntries(entries.map(([, , name, option]) => [name, option])),
+    imageUrl
+  };
+}
+
+function hasUsableAttributes(attributes: Record<string, string>) {
+  return Object.entries(attributes).every(([name, value]) => {
+    const normalizedName = name.trim().toLocaleLowerCase();
+    const normalizedValue = value.trim().toLocaleLowerCase();
+    return normalizedName.length > 0 && normalizedValue.length > 0 && normalizedName !== normalizedValue;
+  });
 }
 
 function normalizePriceRange(result: Record<string, unknown>, productPrice: Record<string, unknown>, skus: ResolvedProduct["skus"]) {
